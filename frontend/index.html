@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DutyPilot — AI-Powered Exam Invigilation Allocation System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased">
+    <div id="app" class="flex min-h-screen">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-slate-900 text-slate-100 flex flex-col border-r border-slate-800 shrink-0">
+            <!-- Logo Header -->
+            <div class="h-16 flex items-center gap-3 px-6 border-b border-slate-800">
+                <div class="p-2 bg-indigo-600 rounded-lg text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.656 48.656 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3M3 12l3-3m-3 3l-3-3M3 12c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M19.5 12a12.518 12.518 0 01-.138 3.662a4.006 4.006 0 01-3.7 3.7 48.656 48.656 0 01-7.324 0 4.006 4.006 0 01-3.7-3.7c-.017-.22-.032-.441-.046-.662M3 12l3 3m-3-3l-3 3M19.5 12l3 3m-3-3l-3 3"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-tight">DutyPilot</h1>
+                    <p class="text-xs text-slate-400">AI-Assisted Optimization</p>
+                </div>
+            </div>
+            
+            <!-- Navigation Links -->
+            <nav class="flex-1 px-4 py-6 space-y-1">
+                <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100'" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"></path></svg>
+                    Dashboard Overview
+                </button>
+                <button @click="activeTab = 'roster'" :class="activeTab === 'roster' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100'" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    Allocation Roster
+                </button>
+                <button @click="activeTab = 'faculty'" :class="activeTab === 'faculty' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100'" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    Faculty Database
+                </button>
+                <button @click="activeTab = 'exams'" :class="activeTab === 'exams' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100'" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Exam Schedule
+                </button>
+                <button @click="activeTab = 'what-if'" :class="activeTab === 'what-if' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100'" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    What-If Simulation Sandbox
+                </button>
+                <button @click="activeTab = 'config'" :class="activeTab === 'config' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100'" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Settings & Config
+                </button>
+            </nav>
+            
+            <!-- Footer Profile -->
+            <div class="p-4 border-t border-slate-800 bg-slate-950 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-sm">
+                    AD
+                </div>
+                <div class="overflow-hidden">
+                    <p class="text-xs font-semibold truncate">Exam Coordinator</p>
+                    <p class="text-[10px] text-slate-500 truncate">Administrator Portal</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Body -->
+        <main class="flex-1 flex flex-col overflow-y-auto h-screen relative">
+            
+            <!-- Header Bar -->
+            <header class="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-8 sticky top-0 z-40 shrink-0">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-xl font-bold tracking-tight text-slate-900 capitalize">
+                        {{ activeTab.replace('-', ' ') }}
+                    </h2>
+                    <span v-if="simulationResult" class="px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-800 rounded text-xs font-medium flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping"></span>
+                        What-If Simulation Active
+                    </span>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button @click="triggerAllocation" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg text-sm font-semibold shadow-sm transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        Optimize Roster
+                    </button>
+                    <a href="/api/allocations/export" download class="px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow-sm">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Download Roster
+                    </a>
+                </div>
+            </header>
+
+            <!-- Alerts Banner -->
+            <div v-if="toastMessage" class="fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg border text-white font-medium flex items-center gap-3 transition-all duration-300" :class="toastType === 'success' ? 'bg-emerald-600 border-emerald-500' : 'bg-rose-600 border-rose-500'">
+                <span>{{ toastMessage }}</span>
+                <button @click="toastMessage = null" class="opacity-80 hover:opacity-100">&times;</button>
+            </div>
+
+            <!-- Scrollable Page Container -->
+            <div class="p-8 flex-1">
+                
+                <!-- TAB 1: DASHBOARD OVERVIEW -->
+                <div v-if="activeTab === 'dashboard'" class="space-y-8">
+                    
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <!-- Stats Card 1 -->
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Roster Success Rate</p>
+                                <h3 class="text-2xl font-bold mt-1" :class="metrics.success_rate >= 100 ? 'text-emerald-600' : 'text-amber-600'">
+                                    {{ metrics.success_rate }}%
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-1">Assignments satisfied</p>
+                            </div>
+                            <div class="p-3 rounded-full" :class="metrics.success_rate >= 100 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                        </div>
+                        
+                        <!-- Stats Card 2 -->
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Duties Assigned</p>
+                                <h3 class="text-2xl font-bold mt-1 text-slate-900">
+                                    {{ metrics.assigned_count }} / {{ metrics.required_count }}
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-1">Total exam slots filled</p>
+                            </div>
+                            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-full">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            </div>
+                        </div>
+
+                        <!-- Stats Card 3 -->
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Roster Shortages</p>
+                                <h3 class="text-2xl font-bold mt-1" :class="metrics.conflicts_count > 0 ? 'text-rose-600' : 'text-emerald-600'">
+                                    {{ metrics.conflicts_count }}
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-1">Missing invigilators</p>
+                            </div>
+                            <div class="p-3 rounded-full" :class="metrics.conflicts_count > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            </div>
+                        </div>
+
+                        <!-- Stats Card 4 -->
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cross-Year Duties</p>
+                                <h3 class="text-2xl font-bold mt-1 text-slate-700">
+                                    {{ metrics.cross_year_assignments }}
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-1">Fallback assignments made</p>
+                            </div>
+                            <div class="p-3 bg-amber-50 text-amber-600 rounded-full">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload and Main actions -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Excel Upload Panel -->
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-lg mb-2">Import Dataset</h4>
+                                <p class="text-xs text-slate-500 leading-relaxed mb-4">
+                                    Upload an Excel sheet with <strong>Faculty</strong>, <strong>Exams</strong>, and <strong>Timetable</strong> tabs to customize scheduling and departmens.
+                                </p>
+                            </div>
+                            
+                            <div class="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-lg p-6 text-center cursor-pointer transition relative bg-slate-50 group">
+                                <input type="file" @change="uploadExcel" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                <svg class="w-8 h-8 text-slate-400 group-hover:text-indigo-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                <span class="text-xs font-semibold text-indigo-600 block">Choose file to upload</span>
+                                <span class="text-[10px] text-slate-400 block mt-1">Excel formats only (.xlsx, .xls)</span>
+                            </div>
+                        </div>
+
+                        <!-- Solver Description Panel -->
+                        <div class="lg:col-span-2 bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-8 rounded-xl shadow-md flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="px-2 py-0.5 bg-indigo-500 text-[10px] uppercase font-bold tracking-wider rounded">Google OR-Tools</span>
+                                    <span class="px-2 py-0.5 bg-emerald-500 text-[10px] uppercase font-bold tracking-wider rounded">CP-SAT</span>
+                                </div>
+                                <h3 class="text-xl font-bold mb-2">Intelligent Constraint Optimization Engine</h3>
+                                <p class="text-xs text-indigo-200 leading-relaxed">
+                                    DutyPilot compiles your exam dates, dynamic slots, faculty workloads, year isolation preferences, and weekly teaching timetables into a math program. The CP-SAT solver explores all configurations to minimize conflicts, balance duty workloads fairly, and avoid unnecessary senior faculty assignments.
+                                </p>
+                            </div>
+                            <div class="mt-6 flex items-center justify-between border-t border-indigo-800/60 pt-4">
+                                <div class="text-xs text-indigo-300">
+                                    Status: <strong class="text-indigo-100">Ready to Optimize</strong>
+                                </div>
+                                <button @click="triggerAllocation" class="px-6 py-2.5 bg-white hover:bg-slate-100 active:bg-slate-200 text-indigo-950 font-bold rounded-lg text-xs tracking-wide shadow transition uppercase">
+                                    Run Optimization
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Roster Quick View -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                            <h4 class="font-bold text-slate-900">Current Assignments Overview</h4>
+                            <button @click="activeTab = 'roster'" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700">View detailed breakdown &rarr;</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm text-slate-600">
+                                <thead class="bg-slate-50 text-[10px] font-bold text-slate-500 uppercase border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-6 py-3">Exam Details</th>
+                                        <th class="px-6 py-3">Date & Slot</th>
+                                        <th class="px-6 py-3">Year / Dept</th>
+                                        <th class="px-6 py-3">Required</th>
+                                        <th class="px-6 py-3">Assigned Invigilators</th>
+                                        <th class="px-6 py-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="exam in roster" :key="exam.id" class="hover:bg-slate-50/50">
+                                        <td class="px-6 py-4">
+                                            <span class="font-semibold text-slate-800 block">{{ exam.course_code }}</span>
+                                            <span class="text-xs text-slate-500 truncate block max-w-xs">{{ exam.course_name }}</span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="font-medium text-slate-800 block">{{ exam.date }}</span>
+                                            <span class="text-xs text-slate-500">{{ exam.slot?.name }} ({{ exam.slot?.start_time }}-{{ exam.slot?.end_time }})</span>
+                                        </td>
+                                        <td class="px-6 py-4 text-xs font-medium text-slate-700">
+                                            {{ exam.year }}rd/th Year &middot; {{ exam.department }}
+                                        </td>
+                                        <td class="px-6 py-4 font-bold text-slate-800">
+                                            {{ exam.required_invigilators }}
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-wrap gap-1">
+                                                <span v-for="assign in getAssignedOnly(exam.assignments)" :key="assign.id" class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-800 border border-slate-200">
+                                                    {{ assign.faculty_name }}
+                                                </span>
+                                                <span v-if="getAssignedOnly(exam.assignments).length === 0" class="text-xs text-rose-500 font-semibold">
+                                                    No duties assigned
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span v-if="getShortageCount(exam) === 0" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                                Filled
+                                            </span>
+                                            <span v-else class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                                <span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping"></span>
+                                                Shortage ({{ getShortageCount(exam) }})
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: ALLOCATION ROSTER -->
+                <div v-if="activeTab === 'roster'" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <!-- Left: Roster List -->
+                    <div class="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-200">
+                            <h4 class="font-bold text-slate-900 text-lg">Exam Allocations</h4>
+                            <p class="text-xs text-slate-500 mt-1">Select an exam to view the detailed invigilator suitability breakdown, backups, and skipped candidates.</p>
+                        </div>
+                        
+                        <div class="divide-y divide-slate-200">
+                            <div v-for="exam in roster" :key="exam.id" @click="selectedExam = exam" :class="selectedExam?.id === exam.id ? 'bg-indigo-50/50' : 'hover:bg-slate-50/30'" class="p-6 cursor-pointer transition flex items-start justify-between gap-4">
+                                <div class="space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold rounded">
+                                            {{ exam.course_code }}
+                                        </span>
+                                        <span class="text-xs font-semibold text-slate-500">
+                                            {{ exam.department }} &middot; {{ exam.year }}rd/th Year
+                                        </span>
+                                    </div>
+                                    <h4 class="font-bold text-slate-900 text-base">{{ exam.course_name }}</h4>
+                                    <div class="flex items-center gap-4 text-xs text-slate-500 pt-1">
+                                        <span class="flex items-center gap-1">
+                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            {{ exam.date }}
+                                        </span>
+                                        <span class="flex items-center gap-1">
+                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            {{ exam.slot?.name }} ({{ exam.slot?.start_time }}-{{ exam.slot?.end_time }})
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="text-right shrink-0 flex flex-col items-end gap-2">
+                                    <span class="text-xs font-medium text-slate-500">Invigilators Required: <strong class="text-slate-800">{{ exam.required_invigilators }}</strong></span>
+                                    <span v-if="getShortageCount(exam) === 0" class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-md border border-emerald-100 flex items-center gap-1">
+                                        <span class="w-1 h-1 bg-emerald-500 rounded-full"></span>
+                                        {{ getAssignedOnly(exam.assignments).length }} Assigned
+                                    </span>
+                                    <span v-else class="px-2 py-1 bg-rose-50 text-rose-700 text-[11px] font-bold rounded-md border border-rose-100 flex items-center gap-1">
+                                        <span class="w-1 h-1 bg-rose-500 rounded-full animate-ping"></span>
+                                        Shortage: {{ getShortageCount(exam) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Allocation Details Drawer -->
+                    <div class="lg:col-span-5">
+                        <div v-if="selectedExam" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden sticky top-20 space-y-6">
+                            
+                            <!-- Header Details -->
+                            <div class="p-6 bg-slate-900 text-white space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="px-2 py-0.5 bg-indigo-600 rounded text-xs font-bold">{{ selectedExam.course_code }}</span>
+                                    <span class="text-xs text-slate-300">{{ selectedExam.date }}</span>
+                                </div>
+                                <h4 class="font-bold text-lg leading-tight">{{ selectedExam.course_name }}</h4>
+                                <div class="text-xs text-slate-400 flex items-center justify-between border-t border-slate-800 pt-3 mt-3">
+                                    <span>Dept: {{ selectedExam.department }} &middot; Year: {{ selectedExam.year }}</span>
+                                    <span>Slot: {{ selectedExam.slot?.name }} ({{ selectedExam.slot?.start_time }}-{{ selectedExam.slot?.end_time }})</span>
+                                </div>
+                            </div>
+
+                            <!-- Assigned Invigilators -->
+                            <div class="px-6 space-y-3">
+                                <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                    <h5 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                                        <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span>
+                                        Assigned Invigilators ({{ getAssignedOnly(selectedExam.assignments).length }})
+                                    </h5>
+                                    <span class="text-xs font-medium text-slate-500">Needed: {{ selectedExam.required_invigilators }}</span>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <div v-for="assign in getAssignedOnly(selectedExam.assignments)" :key="assign.id" class="p-4 bg-slate-50 rounded-lg border border-slate-100 flex flex-col gap-2">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h6 class="font-semibold text-slate-900 text-sm">{{ assign.faculty_name }}</h6>
+                                                <p class="text-[10px] text-slate-500">{{ assign.faculty_role }} &middot; {{ assign.faculty_department }} &middot; {{ assign.faculty_primary_year }}rd Year Faculty</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded">
+                                                    Score: {{ assign.suitability_score }}/100
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Score breakdown -->
+                                        <div class="bg-white p-2.5 rounded border border-slate-200/80 text-[10px] grid grid-cols-3 gap-y-1 gap-x-2 text-slate-500">
+                                            <div>Year Match: <strong class="text-slate-800">+{{ assign.score_breakdown?.year_match }}</strong></div>
+                                            <div>Dept Match: <strong class="text-slate-800">+{{ assign.score_breakdown?.dept_match }}</strong></div>
+                                            <div>Workload: <strong class="text-slate-800">+{{ assign.score_breakdown?.workload }}</strong></div>
+                                            <div>Availability: <strong class="text-slate-800">+{{ assign.score_breakdown?.availability }}</strong></div>
+                                            <div>Experience: <strong class="text-slate-800">+{{ assign.score_breakdown?.experience }}</strong></div>
+                                            <div>Balance: <strong class="text-slate-800">+{{ assign.score_breakdown?.balance }}</strong></div>
+                                        </div>
+                                    </div>
+                                    <div v-if="getAssignedOnly(selectedExam.assignments).length === 0" class="text-center py-4 bg-rose-50 text-rose-700 text-xs font-semibold rounded-lg border border-rose-100">
+                                        🚨 Severe shortage! No eligible faculty found to assign.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Backup Faculty -->
+                            <div class="px-6 space-y-3">
+                                <div class="border-b border-slate-100 pb-2">
+                                    <h5 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                                        <span class="w-2.5 h-2.5 bg-indigo-400 rounded-full animate-pulse"></span>
+                                        Recommended Backups ({{ getBackupsOnly(selectedExam.assignments).length }})
+                                    </h5>
+                                </div>
+                                <div class="space-y-2">
+                                    <div v-for="backup in getBackupsOnly(selectedExam.assignments)" :key="backup.id" class="p-3 bg-indigo-50/30 rounded-lg border border-indigo-100/60 flex items-center justify-between">
+                                        <div>
+                                            <h6 class="font-semibold text-slate-900 text-xs">{{ backup.faculty_name }}</h6>
+                                            <p class="text-[9px] text-slate-500">{{ backup.faculty_role }} &middot; {{ backup.faculty_department }} &middot; {{ backup.faculty_primary_year }}rd Year</p>
+                                        </div>
+                                        <span class="text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
+                                            Score: {{ backup.suitability_score }}
+                                        </span>
+                                    </div>
+                                    <div v-if="getBackupsOnly(selectedExam.assignments).length === 0" class="text-center py-2 text-slate-400 text-xs">
+                                        No backups available.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Avoided Faculty -->
+                            <div class="px-6 pb-6 space-y-3">
+                                <div class="border-b border-slate-100 pb-2">
+                                    <h5 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                                        <span class="w-2.5 h-2.5 bg-slate-400 rounded-full"></span>
+                                        Avoided / Conflicts ({{ getAvoidedOnly(selectedExam.assignments).length }})
+                                    </h5>
+                                </div>
+                                <div class="max-h-60 overflow-y-auto divide-y divide-slate-100 pr-1">
+                                    <div v-for="avoid in getAvoidedOnly(selectedExam.assignments)" :key="avoid.id" class="py-2.5 flex items-start justify-between gap-3 text-xs">
+                                        <div>
+                                            <h6 class="font-semibold text-slate-800">{{ avoid.faculty_name }}</h6>
+                                            <p class="text-[9px] text-slate-500">{{ avoid.faculty_role }} &middot; {{ avoid.faculty_department }} &middot; Score: {{ avoid.suitability_score }}</p>
+                                        </div>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-medium max-w-[200px] break-words" :class="getAvoidReasonClass(avoid.rejection_reason)">
+                                            {{ avoid.rejection_reason }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div v-else class="h-64 bg-slate-50 rounded-xl border border-slate-200 border-dashed flex flex-col items-center justify-center text-slate-400 text-center p-6">
+                            <svg class="w-10 h-10 text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                            <p class="font-medium text-slate-500">No Exam Selected</p>
+                            <p class="text-xs text-slate-400 mt-1">Select an exam from the list to display its optimization scorecard.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: FACULTY DATABASE -->
+                <div v-if="activeTab === 'faculty'" class="space-y-6">
+                    
+                    <!-- Search & Filter Actions -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex flex-1 items-center gap-3">
+                            <input type="text" v-model="facultySearch" placeholder="Search faculty by name..." class="px-4 py-2 border border-slate-200 rounded-lg text-sm w-full max-w-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <select v-model="facultyDeptFilter" class="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">All Departments</option>
+                                <option v-for="d in departments" :key="d.id" :value="d.name">{{ d.name }}</option>
+                            </select>
+                        </div>
+                        <button @click="showAddFacultyModal = true" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow transition flex items-center gap-2">
+                            Add New Faculty
+                        </button>
+                    </div>
+
+                    <!-- Faculty Table -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="bg-slate-50 text-[10px] font-bold text-slate-500 uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="px-6 py-3">Faculty Member</th>
+                                    <th class="px-6 py-3">Department</th>
+                                    <th class="px-6 py-3">Role</th>
+                                    <th class="px-6 py-3">Primary Year</th>
+                                    <th class="px-6 py-3">Experience</th>
+                                    <th class="px-6 py-3">Roster Load</th>
+                                    <th class="px-6 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="fac in filteredFaculty" :key="fac.id" class="hover:bg-slate-50/50">
+                                    <td class="px-6 py-4">
+                                        <span class="font-bold text-slate-800 block">{{ fac.name }}</span>
+                                        <span class="text-xs text-slate-500 block">{{ fac.email }}</span>
+                                    </td>
+                                    <td class="px-6 py-4 font-semibold text-slate-700">
+                                        {{ fac.department }}
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-2 py-0.5 rounded text-xs font-semibold" :class="getRoleBadgeClass(fac.role)">
+                                            {{ fac.role }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-xs font-medium text-slate-600">
+                                        {{ fac.primary_year }}rd Year
+                                    </td>
+                                    <td class="px-6 py-4 text-xs text-slate-600">
+                                        {{ fac.experience_years }} Years
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-24 bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
+                                                <div class="h-full rounded-full transition-all" :class="getLoadColorClass(getFacultyLoadCount(fac.id), fac.max_slots)" :style="{ width: (getFacultyLoadCount(fac.id) / fac.max_slots * 100) + '%' }"></div>
+                                            </div>
+                                            <span class="text-xs font-bold text-slate-700">
+                                                {{ getFacultyLoadCount(fac.id) }} / {{ fac.max_slots }}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button @click="openTimetableModal(fac)" class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-medium rounded-lg shadow-sm transition">
+                                                Timetable
+                                            </button>
+                                            <button @click="deleteFaculty(fac.id)" class="p-1.5 hover:bg-rose-50 border border-transparent hover:border-rose-100 text-rose-600 rounded-lg transition">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 4: EXAM SCHEDULE -->
+                <div v-if="activeTab === 'exams'" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Create Exam form -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                        <h4 class="font-bold text-slate-900 text-lg">Add Exam Event</h4>
+                        <hr class="border-slate-100">
+                        
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">Course Code</label>
+                                <input type="text" v-model="newExam.course_code" placeholder="e.g., ACSE302" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">Course Name</label>
+                                <input type="text" v-model="newExam.course_name" placeholder="e.g., Design of Algorithms" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1">Department</label>
+                                    <select v-model="newExam.department" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <option value="">Select Dept</option>
+                                        <option v-for="d in departments" :key="d.id" :value="d.name">{{ d.name }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1">Exam Year</label>
+                                    <select v-model.number="newExam.year" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <option value="1">1st Year</option>
+                                        <option value="2">2nd Year</option>
+                                        <option value="3">3rd Year</option>
+                                        <option value="4">4th Year</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1">Date</label>
+                                    <input type="date" v-model="newExam.date" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1">Time Slot</label>
+                                    <select v-model.number="newExam.slot_id" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <option value="">Select Slot</option>
+                                        <option v-for="s in slots" :key="s.id" :value="s.id">{{ s.name }} ({{ s.start_time }}-{{ s.end_time }})</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1">Required Invigilators</label>
+                                <input type="number" v-model.number="newExam.required_invigilators" min="1" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <button @click="addExam" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-sm transition">
+                                Create Event
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Exams List -->
+                    <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="bg-slate-50 text-[10px] font-bold text-slate-500 uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="px-6 py-3">Course</th>
+                                    <th class="px-6 py-3">Date / Slot</th>
+                                    <th class="px-6 py-3">Year / Dept</th>
+                                    <th class="px-6 py-3">Required</th>
+                                    <th class="px-6 py-3 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="ex in exams" :key="ex.id" class="hover:bg-slate-50/50">
+                                    <td class="px-6 py-4">
+                                        <span class="font-bold text-slate-800 block">{{ ex.course_code }}</span>
+                                        <span class="text-xs text-slate-500 block truncate max-w-xs">{{ ex.course_name }}</span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="font-medium text-slate-700 block">{{ ex.date }}</span>
+                                        <span class="text-xs text-slate-400 block">{{ ex.slot?.name }}</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-xs font-semibold text-slate-700">
+                                        {{ ex.year }}rd Year &middot; {{ ex.department }}
+                                    </td>
+                                    <td class="px-6 py-4 font-bold text-slate-800 text-center">
+                                        {{ ex.required_invigilators }}
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <button @click="deleteExam(ex.id)" class="p-1.5 hover:bg-rose-50 text-rose-600 rounded-lg transition border border-transparent hover:border-rose-100">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 5: WHAT-IF SIMULATOR -->
+                <div v-if="activeTab === 'what-if'" class="space-y-6">
+                    <!-- Sandbox Info and simulator card comparison -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        
+                        <!-- Configuration Form -->
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                            <h4 class="font-bold text-slate-900 text-lg">Simulator Controls</h4>
+                            <p class="text-xs text-slate-500 leading-relaxed">
+                                Simulates temporary absence of specific faculty members. Select who is unavailable, run the solver, and inspect fallback rosters.
+                            </p>
+                            <hr class="border-slate-100">
+                            
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Mark Absent (What-If)</label>
+                                <div class="max-h-72 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100 p-2">
+                                    <div v-for="fac in faculty" :key="fac.id" class="flex items-center gap-3 p-2 hover:bg-slate-50 text-xs">
+                                        <input type="checkbox" :checked="fac.is_simulated_unavailable" @change="toggleFacultySimulation(fac.id, !fac.is_simulated_unavailable)" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                        <div>
+                                            <span class="font-semibold block text-slate-800">{{ fac.name }}</span>
+                                            <span class="text-[9px] text-slate-400 uppercase font-bold">{{ fac.role }} &middot; {{ fac.department }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="pt-4 flex flex-col gap-2">
+                                <button @click="runSimulation" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm rounded-lg shadow-sm transition">
+                                    Simulate What-If Allocation
+                                </button>
+                                <button @click="clearSimulation" class="w-full py-2.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-medium rounded-lg transition">
+                                    Clear Absences
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Side-by-side Scenario Comparison Metrics -->
+                        <div class="lg:col-span-2 space-y-6">
+                            
+                            <!-- Simulation comparison results cards -->
+                            <div v-if="simulationResult" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Scenario A: Baseline -->
+                                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                                    <div class="absolute top-0 left-0 w-2 h-full bg-slate-900"></div>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Scenario A</span>
+                                    <h4 class="font-bold text-slate-900 text-base mt-0.5">Baseline Roster</h4>
+                                    
+                                    <div class="grid grid-cols-2 gap-4 mt-6 text-sm">
+                                        <div>
+                                            <span class="text-xs text-slate-400 block">Success Rate</span>
+                                            <strong class="text-lg text-emerald-600 font-bold">{{ metrics.success_rate }}%</strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-xs text-slate-400 block">Assigned / Required</span>
+                                            <strong class="text-lg text-slate-800 font-bold">{{ metrics.assigned_count }}/{{ metrics.required_count }}</strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-xs text-slate-400 block">Shortages</span>
+                                            <strong class="text-lg text-slate-700 font-bold">{{ metrics.conflicts_count }}</strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-xs text-slate-400 block">Cross-Year Duties</span>
+                                            <strong class="text-lg text-slate-700 font-bold">{{ metrics.cross_year_assignments }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Scenario B: Simulation -->
+                                <div class="bg-white p-6 rounded-xl border border-amber-200 shadow-sm relative overflow-hidden bg-amber-50/10">
+                                    <div class="absolute top-0 left-0 w-2 h-full bg-amber-500"></div>
+                                    <span class="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">Scenario B</span>
+                                    <h4 class="font-bold text-slate-900 text-base mt-0.5">Absent Faculty Simulation</h4>
+                                    
+                                    <div class="grid grid-cols-2 gap-4 mt-6 text-sm">
+                                        <div>
+                                            <span class="text-xs text-slate-400 block">Success Rate</span>
+                                            <strong class="text-lg font-bold" :class="simulationResult.success_rate < metrics.success_rate ? 'text-rose-600' : 'text-emerald-600'">
+                                                {{ simulationResult.success_rate }}%
+                                            </strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-xs text-slate-400 block">Assigned / Required</span>
+                                            <strong class="text-lg text-slate-800 font-bold">{{ simulationResult.assigned_count }}/{{ simulationResult.required_count }}</strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-xs text-slate-400 block">Shortages</span>
+                                            <strong class="text-lg font-bold" :class="simulationResult.conflicts_count > metrics.conflicts_count ? 'text-rose-600' : 'text-slate-700'">
+                                                {{ simulationResult.conflicts_count }}
+                                            </strong>
+                                        </div>
+                                        <div>
+                                            <span class="text-xs text-slate-400 block">Cross-Year Duties</span>
+                                            <strong class="text-lg text-slate-700 font-bold">{{ simulationResult.cross_year_assignments }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Shortage breakdown comparison -->
+                            <div v-if="simulationResult" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                                <h5 class="font-bold text-slate-900 text-sm">Exam Shortage Comparison</h5>
+                                <div class="divide-y divide-slate-100">
+                                    <div v-for="(shortage, course) in simulationResult.shortages" :key="course" class="py-3 flex items-center justify-between text-xs">
+                                        <span class="font-semibold text-slate-700">{{ course }}</span>
+                                        <div class="flex items-center gap-6">
+                                            <span>Baseline Missing: <strong class="text-slate-800">{{ metrics.shortages[course] || 0 }}</strong></span>
+                                            <span>Simulation Missing: <strong :class="shortage > (metrics.shortages[course] || 0) ? 'text-rose-600 font-bold' : 'text-slate-800'">{{ shortage }}</strong></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-else class="h-64 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 text-center p-6">
+                                <svg class="w-10 h-10 text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                <p class="font-semibold text-slate-500">Run Simulator</p>
+                                <p class="text-xs text-slate-400 mt-1">Check one or more faculty names on the left, then click "Simulate" to compute scenario impacts.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- TAB 6: SETTINGS & CONFIG -->
+                <div v-if="activeTab === 'config'" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Manage Departments -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                        <h4 class="font-bold text-slate-900 text-base">Departments Config</h4>
+                        <hr class="border-slate-100">
+                        <div class="flex gap-2">
+                            <input type="text" v-model="newDeptName" placeholder="e.g., ACSE" class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button @click="addDepartment" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-sm transition">
+                                Add
+                            </button>
+                        </div>
+                        <div class="divide-y divide-slate-100 max-h-60 overflow-y-auto">
+                            <div v-for="dept in departments" :key="dept.id" class="py-2.5 flex items-center justify-between text-sm">
+                                <span class="font-medium text-slate-700">{{ dept.name }}</span>
+                                <button @click="deleteDepartment(dept.id)" class="text-xs text-rose-600 hover:text-rose-800 transition">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Manage Time Slots -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                        <h4 class="font-bold text-slate-900 text-base">Time Slots Config</h4>
+                        <hr class="border-slate-100">
+                        
+                        <div class="space-y-2 text-xs">
+                            <div class="grid grid-cols-3 gap-2">
+                                <input type="text" v-model="newSlot.name" placeholder="Name (e.g. Slot 1)" class="px-2.5 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <input type="text" v-model="newSlot.start_time" placeholder="Start (e.g. 08:15)" class="px-2.5 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <input type="text" v-model="newSlot.end_time" placeholder="End (e.g. 10:15)" class="px-2.5 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <button @click="addTimeSlot" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs transition">
+                                Add Time Slot
+                            </button>
+                        </div>
+                        
+                        <div class="divide-y divide-slate-100 max-h-60 overflow-y-auto">
+                            <div v-for="s in slots" :key="s.id" class="py-2.5 flex items-center justify-between text-sm">
+                                <div>
+                                    <span class="font-semibold text-slate-800">{{ s.name }}</span>
+                                    <span class="text-xs text-slate-500 ml-2">({{ s.start_time }} - {{ s.end_time }})</span>
+                                </div>
+                                <button @click="deleteTimeSlot(s.id)" class="text-xs text-rose-600 hover:text-rose-800 transition">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- MODAL: Faculty Add Form -->
+        <div v-if="showAddFacultyModal" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-md border border-slate-100 overflow-hidden">
+                <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+                    <h4 class="font-bold text-base">Add New Faculty Member</h4>
+                    <button @click="showAddFacultyModal = false" class="text-white hover:text-slate-200 text-xl font-medium leading-none">&times;</button>
+                </div>
+                <div class="p-6 space-y-4 text-sm">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Full Name</label>
+                        <input type="text" v-model="newFaculty.name" placeholder="e.g. Dr. A (ACSE)" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Email Address</label>
+                        <input type="email" v-model="newFaculty.email" placeholder="e.g. faculty@email.edu" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Role / Limit</label>
+                            <select v-model="newFaculty.role" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="BOA">BOA (Max 2)</option>
+                                <option value="Senior">Senior (Max 3)</option>
+                                <option value="Fresher">Fresher (Max 4)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Department</label>
+                            <select v-model="newFaculty.department" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">Select Dept</option>
+                                <option v-for="d in departments" :key="d.id" :value="d.name">{{ d.name }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Primary Year Group</label>
+                            <select v-model.number="newFaculty.primary_year" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="1">1st Year</option>
+                                <option value="2">2nd Year</option>
+                                <option value="3">3rd Year</option>
+                                <option value="4">4th Year</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Experience Years</label>
+                            <input type="number" v-model.number="newFaculty.experience_years" min="0" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                        <button @click="showAddFacultyModal = false" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition">Cancel</button>
+                        <button @click="addFaculty" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">Save Faculty</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: Timetable Edit Form -->
+        <div v-if="timetableModalFaculty" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl border border-slate-100 overflow-hidden">
+                <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-base">{{ timetableModalFaculty.name }} &mdash; Timetable Config</h4>
+                        <p class="text-[10px] text-slate-300">Toggle slots where this faculty teaches a class (Red = teaching/busy, Grey = available/free)</p>
+                    </div>
+                    <button @click="timetableModalFaculty = null" class="text-white hover:text-slate-200 text-xl font-medium leading-none">&times;</button>
+                </div>
+                
+                <div class="p-6 overflow-x-auto text-sm space-y-4">
+                    
+                    <table class="w-full text-center border-collapse border border-slate-200">
+                        <thead>
+                            <tr class="bg-slate-50 text-xs font-bold text-slate-500">
+                                <th class="border border-slate-200 p-2.5">Day of Week</th>
+                                <th v-for="s in slots" :key="s.id" class="border border-slate-200 p-2.5">
+                                    {{ s.name }}
+                                    <span class="block text-[9px] text-slate-400 font-normal">({{ s.start_time }}-{{ s.end_time }})</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']" :key="day">
+                                <td class="border border-slate-200 p-2 font-semibold text-xs bg-slate-50/50 text-slate-700">{{ day }}</td>
+                                <td v-for="s in slots" :key="s.id" class="border border-slate-200 p-2">
+                                    <button 
+                                        @click="toggleTimetableSlot(day, s.id)" 
+                                        :class="isTeachingSlot(day, s.id) ? 'bg-rose-500 text-white border-rose-600' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'"
+                                        class="w-full py-2.5 px-1.5 rounded border text-[11px] font-bold shadow-sm transition"
+                                    >
+                                        {{ isTeachingSlot(day, s.id) ? 'Teaching Class' : 'Free' }}
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                        <button @click="timetableModalFaculty = null" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition">Cancel</button>
+                        <button @click="saveTimetable" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">Save Schedule</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- App State Reactivity Script -->
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                // Application State
+                const activeTab = ref('dashboard');
+                const toastMessage = ref(null);
+                const toastType = ref('success');
+                
+                // Data models from database
+                const departments = ref([]);
+                const slots = ref([]);
+                const faculty = ref([]);
+                const exams = ref([]);
+                const roster = ref([]);
+                
+                // Detailed view models
+                const selectedExam = ref(null);
+                const showAddFacultyModal = ref(false);
+                const timetableModalFaculty = ref(null);
+                const timetableModalData = ref([]);
+                
+                // Solver performance indicators
+                const metrics = ref({
+                    success_rate: 100,
+                    assigned_count: 0,
+                    required_count: 0,
+                    conflicts_count: 0,
+                    cross_year_assignments: 0,
+                    shortages: {}
+                });
+                
+                // What-If Simulation State
+                const simulationResult = ref(null);
+                
+                // Settings & creation temp variables
+                const newDeptName = ref('');
+                const newSlot = ref({ name: '', start_time: '', end_time: '' });
+                const newFaculty = ref({ name: '', email: '', role: 'Senior', department: '', primary_year: 3, experience_years: 5 });
+                const newExam = ref({ course_code: '', course_name: '', department: '', year: 3, date: '', slot_id: '', required_invigilators: 2 });
+                
+                // Search and Filters
+                const facultySearch = ref('');
+                const facultyDeptFilter = ref('');
+
+                // Trigger Alert
+                const triggerToast = (msg, type = 'success') => {
+                    toastMessage.value = msg;
+                    toastType.value = type;
+                    setTimeout(() => {
+                        toastMessage.value = null;
+                    }, 5000);
+                };
+
+                // Load Initial Datasets
+                const fetchAllData = async () => {
+                    try {
+                        const deptsRes = await fetch('/api/departments');
+                        departments.value = await deptsRes.json();
+                        
+                        const slotsRes = await fetch('/api/slots');
+                        slots.value = await slotsRes.json();
+                        
+                        const facRes = await fetch('/api/faculty');
+                        faculty.value = await facRes.json();
+                        
+                        const examsRes = await fetch('/api/exams');
+                        exams.value = await examsRes.json();
+                        
+                        await fetchRoster();
+                    } catch (e) {
+                        triggerToast('Error loading datasets from server.', 'error');
+                    }
+                };
+
+                // Fetch solved roster & update metrics
+                const fetchRoster = async () => {
+                    try {
+                        const res = await fetch('/api/allocations/current');
+                        roster.value = await res.json();
+                        
+                        // Recalculate metrics on the active database roster
+                        let totalReq = 0;
+                        let totalAss = 0;
+                        let totalCross = 0;
+                        let shortages = {};
+                        
+                        roster.value.forEach(ex => {
+                            totalReq += ex.required_invigilators;
+                            const assigned = ex.assignments.filter(a => a.status === 'Assigned');
+                            totalAss += assigned.length;
+                            
+                            assigned.forEach(a => {
+                                if (a.faculty_primary_year !== ex.year) {
+                                    totalCross++;
+                                }
+                            });
+                            
+                            const sh = Math.max(0, ex.required_invigilators - assigned.length);
+                            if (sh > 0) {
+                                shortages[ex.course_code] = sh;
+                            }
+                        });
+                        
+                        const success = totalReq > 0 ? (totalAss / totalReq * 100) : 100;
+                        metrics.value = {
+                            success_rate: Math.round(success * 100) / 100,
+                            assigned_count: totalAss,
+                            required_count: totalReq,
+                            conflicts_count: Object.values(shortages).reduce((a, b) => a + b, 0),
+                            cross_year_assignments: totalCross,
+                            shortages: shortages
+                        };
+                        
+                        // Keep drawer selection synced if open
+                        if (selectedExam.value) {
+                            const updatedExam = roster.value.find(e => e.id === selectedExam.value.id);
+                            if (updatedExam) selectedExam.value = updatedExam;
+                        }
+                    } catch (e) {
+                        triggerToast('Error fetching current roster.', 'error');
+                    }
+                };
+
+                // Run Solver
+                const triggerAllocation = async () => {
+                    try {
+                        const res = await fetch('/api/allocations/run', { method: 'POST' });
+                        const data = await res.json();
+                        
+                        if (data.status === 'success') {
+                            triggerToast('Roster optimized successfully using CP-SAT.');
+                            simulationResult.value = null; // Clear active simulations
+                            await fetchRoster();
+                        } else {
+                            triggerToast(data.message || 'Solver failed to run.', 'error');
+                        }
+                    } catch (e) {
+                        triggerToast('Optimization request failed.', 'error');
+                    }
+                };
+
+                // Drag & Drop Excel upload handler
+                const uploadExcel = async (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    try {
+                        triggerToast('Uploading and parsing dataset...');
+                        const res = await fetch('/api/allocations/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const data = await res.json();
+                        if (res.ok) {
+                            triggerToast('Dataset uploaded successfully!');
+                            await fetchAllData();
+                        } else {
+                            triggerToast(data.detail || 'Failed to parse Excel.', 'error');
+                        }
+                    } catch (e) {
+                        triggerToast('Upload API request error.', 'error');
+                    }
+                };
+
+                // Get assignments helper
+                const getAssignedOnly = (assigns) => assigns.filter(a => a.status === 'Assigned');
+                const getBackupsOnly = (assigns) => assigns.filter(a => a.status === 'Backup');
+                const getAvoidedOnly = (assigns) => assigns.filter(a => a.status === 'Avoided');
+                
+                const getShortageCount = (exam) => {
+                    const assigned = getAssignedOnly(exam.assignments).length;
+                    return Math.max(0, exam.required_invigilators - assigned);
+                };
+
+                // Workload counts for faculty database
+                const getFacultyLoadCount = (facId) => {
+                    let cnt = 0;
+                    roster.value.forEach(ex => {
+                        ex.assignments.forEach(a => {
+                            if (a.faculty_id === facId && a.status === 'Assigned') {
+                                cnt++;
+                            }
+                        });
+                    });
+                    return cnt;
+                };
+
+                // Stylings helper
+                const getAvoidReasonClass = (reason) => {
+                    if (!reason) return 'bg-slate-100 text-slate-600';
+                    if (reason.includes('Class conflict')) return 'bg-rose-50 border border-rose-100 text-rose-700 font-semibold';
+                    if (reason.includes('Maximum workload')) return 'bg-amber-50 border border-amber-100 text-amber-700 font-semibold';
+                    if (reason.includes('Different primary year')) return 'bg-slate-100 border border-slate-200 text-slate-600';
+                    return 'bg-slate-50 text-slate-500';
+                };
+
+                const getRoleBadgeClass = (role) => {
+                    if (role === 'BOA') return 'bg-indigo-100 text-indigo-800 border border-indigo-200';
+                    if (role === 'Senior') return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+                    return 'bg-blue-100 text-blue-800 border border-blue-200';
+                };
+
+                const getLoadColorClass = (current, max) => {
+                    if (current === 0) return 'bg-slate-300';
+                    if (current < max) return 'bg-emerald-500';
+                    return 'bg-rose-500';
+                };
+
+                // CRUD - Departments
+                const addDepartment = async () => {
+                    if (!newDeptName.value) return;
+                    try {
+                        const res = await fetch('/api/departments', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name: newDeptName.value.toUpperCase().trim() })
+                        });
+                        if (res.ok) {
+                            newDeptName.value = '';
+                            triggerToast('Department added.');
+                            await fetchAllData();
+                        } else {
+                            const err = await res.json();
+                            triggerToast(err.detail || 'Dept error', 'error');
+                        }
+                    } catch (e) { triggerToast('API error', 'error'); }
+                };
+
+                const deleteDepartment = async (id) => {
+                    try {
+                        const res = await fetch(`/api/departments/${id}`, { method: 'DELETE' });
+                        if (res.ok) {
+                            triggerToast('Department deleted.');
+                            await fetchAllData();
+                        }
+                    } catch (e) { triggerToast('API error', 'error'); }
+                };
+
+                // CRUD - Time slots
+                const addTimeSlot = async () => {
+                    if (!newSlot.value.name || !newSlot.value.start_time || !newSlot.value.end_time) return;
+                    try {
+                        const res = await fetch('/api/slots', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(newSlot.value)
+                        });
+                        if (res.ok) {
+                            newSlot.value = { name: '', start_time: '', end_time: '' };
+                            triggerToast('Time Slot added.');
+                            await fetchAllData();
+                        } else {
+                            const err = await res.json();
+                            triggerToast(err.detail || 'Slot error', 'error');
+                        }
+                    } catch (e) { triggerToast('API error', 'error'); }
+                };
+
+                const deleteTimeSlot = async (id) => {
+                    try {
+                        const res = await fetch(`/api/slots/${id}`, { method: 'DELETE' });
+                        if (res.ok) {
+                            triggerToast('Time slot deleted.');
+                            await fetchAllData();
+                        }
+                    } catch (e) { triggerToast('API error', 'error'); }
+                };
+
+                // CRUD - Faculty
+                const addFaculty = async () => {
+                    if (!newFaculty.value.name || !newFaculty.value.email || !newFaculty.value.department) return;
+                    try {
+                        const res = await fetch('/api/faculty', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(newFaculty.value)
+                        });
+                        if (res.ok) {
+                            showAddFacultyModal.value = false;
+                            newFaculty.value = { name: '', email: '', role: 'Senior', department: '', primary_year: 3, experience_years: 5 };
+                            triggerToast('Faculty added.');
+                            await fetchAllData();
+                        }
+                    } catch (e) { triggerToast('API error', 'error'); }
+                };
+
+                const deleteFaculty = async (id) => {
+                    if (!confirm('Are you sure you want to delete this faculty member?')) return;
+                    try {
+                        const res = await fetch(`/api/faculty/${id}`, { method: 'DELETE' });
+                        if (res.ok) {
+                            triggerToast('Faculty member deleted.');
+                            await fetchAllData();
+                        }
+                    } catch (e) { triggerToast('API error', 'error'); }
+                };
+
+                // Timetable Editor Modal Handlers
+                const openTimetableModal = async (fac) => {
+                    timetableModalFaculty.value = fac;
+                    try {
+                        const res = await fetch(`/api/timetable/${fac.id}`);
+                        timetableModalData.value = await res.json();
+                    } catch (e) {
+                        triggerToast('Error loading schedule.', 'error');
+                    }
+                };
+
+                const isTeachingSlot = (day, slotId) => {
+                    const s = timetableModalData.value.find(item => item.day_of_week === day && item.slot_id === slotId);
+                    return s ? s.is_teaching : false;
+                };
+
+                const toggleTimetableSlot = (day, slotId) => {
+                    const s = timetableModalData.value.find(item => item.day_of_week === day && item.slot_id === slotId);
+                    if (s) {
+                        s.is_teaching = !s.is_teaching;
+                    }
+                };
+
+                const saveTimetable = async () => {
+                    if (!timetableModalFaculty.value) return;
+                    try {
+                        const res = await fetch(`/api/timetable/${timetableModalFaculty.value.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(timetableModalData.value)
+                        });
+                        if (res.ok) {
+                            timetableModalFaculty.value = null;
+                            triggerToast('Faculty teaching schedule saved.');
+                        }
+                    } catch (e) {
+                        triggerToast('Error saving timetable.', 'error');
+                    }
+                };
+
+                // CRUD - Exams
+                const addExam = async () => {
+                    if (!newExam.value.course_code || !newExam.value.course_name || !newExam.value.department || !newExam.value.date || !newExam.value.slot_id) return;
+                    try {
+                        const res = await fetch('/api/exams', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(newExam.value)
+                        });
+                        if (res.ok) {
+                            newExam.value = { course_code: '', course_name: '', department: '', year: 3, date: '', slot_id: '', required_invigilators: 2 };
+                            triggerToast('Exam event scheduled.');
+                            await fetchAllData();
+                        }
+                    } catch (e) { triggerToast('API error', 'error'); }
+                };
+
+                const deleteExam = async (id) => {
+                    try {
+                        const res = await fetch(`/api/exams/${id}`, { method: 'DELETE' });
+                        if (res.ok) {
+                            triggerToast('Exam event deleted.');
+                            await fetchAllData();
+                        }
+                    } catch (e) { triggerToast('API error', 'error'); }
+                };
+
+                // What-If Simulation Sandbox Actions
+                const toggleFacultySimulation = async (facId, val) => {
+                    try {
+                        await fetch('/api/faculty/toggle-simulation', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ faculty_ids: [facId], is_unavailable: val })
+                        });
+                        // Update local faculty copy
+                        const fac = faculty.value.find(f => f.id === facId);
+                        if (fac) fac.is_simulated_unavailable = val;
+                    } catch (e) {
+                        triggerToast('Error updating simulated absence.', 'error');
+                    }
+                };
+
+                const runSimulation = async () => {
+                    try {
+                        triggerToast('Running CP-SAT scenario simulation...');
+                        const res = await fetch('/api/allocations/simulate', { method: 'POST' });
+                        const data = await res.json();
+                        
+                        if (data.status === 'success') {
+                            simulationResult.value = data;
+                            triggerToast('What-If simulation computed. Inspect compared results.');
+                        } else {
+                            triggerToast(data.message || 'Simulation run failed.', 'error');
+                        }
+                    } catch (e) {
+                        triggerToast('Simulation request error.', 'error');
+                    }
+                };
+
+                const clearSimulation = async () => {
+                    try {
+                        await fetch('/api/faculty/clear-simulation', { method: 'POST' });
+                        simulationResult.value = null;
+                        
+                        // Reset local flags
+                        faculty.value.forEach(f => f.is_simulated_unavailable = false);
+                        triggerToast('Simulated absences cleared.');
+                    } catch (e) {
+                        triggerToast('Simulation reset error.', 'error');
+                    }
+                };
+
+                // Filtering Computed property for Faculty Table
+                const filteredFaculty = computed(() => {
+                    return faculty.value.filter(fac => {
+                        const matchSearch = fac.name.toLowerCase().includes(facultySearch.value.toLowerCase()) || 
+                                            fac.email.toLowerCase().includes(facultySearch.value.toLowerCase());
+                        const matchDept = !facultyDeptFilter.value || fac.department === facultyDeptFilter.value;
+                        return matchSearch && matchDept;
+                    });
+                });
+
+                // Lifecycle Hook
+                onMounted(() => {
+                    fetchAllData();
+                });
+
+                return {
+                    activeTab,
+                    toastMessage,
+                    toastType,
+                    departments,
+                    slots,
+                    faculty,
+                    exams,
+                    roster,
+                    selectedExam,
+                    showAddFacultyModal,
+                    timetableModalFaculty,
+                    timetableModalData,
+                    metrics,
+                    simulationResult,
+                    newDeptName,
+                    newSlot,
+                    newFaculty,
+                    newExam,
+                    facultySearch,
+                    facultyDeptFilter,
+                    
+                    triggerToast,
+                    triggerAllocation,
+                    uploadExcel,
+                    getAssignedOnly,
+                    getBackupsOnly,
+                    getAvoidedOnly,
+                    getShortageCount,
+                    getFacultyLoadCount,
+                    getAvoidReasonClass,
+                    getRoleBadgeClass,
+                    getLoadColorClass,
+                    
+                    addDepartment,
+                    deleteDepartment,
+                    addTimeSlot,
+                    deleteTimeSlot,
+                    addFaculty,
+                    deleteFaculty,
+                    openTimetableModal,
+                    isTeachingSlot,
+                    toggleTimetableSlot,
+                    saveTimetable,
+                    addExam,
+                    deleteExam,
+                    toggleFacultySimulation,
+                    runSimulation,
+                    clearSimulation,
+                    filteredFaculty
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
