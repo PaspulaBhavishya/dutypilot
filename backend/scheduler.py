@@ -14,50 +14,54 @@ def get_day_of_week(date_str: str) -> str:
 def calculate_suitability(faculty: Faculty, exam: Exam, final_workloads: dict, is_available: bool) -> dict:
     """
     Calculates suitability score breakdown (Max 100).
-    - Same Year: 30
-    - Same Dept: 20
-    - Availability: 20 (base reward for being free / no class conflict)
-    - Low Workload: 15 (rewards lower current roster workload)
-    - Experience: 10 (experience_years up to 10)
-    - Balance: 5 (rewards overall low duties)
+    - Proximity & Role Tier: Max 70
+      - Same Dept & Same Year: Fresher=70, Senior=60, BOA=50
+      - Same Dept & Other Year: Fresher=45, Senior=40, BOA=35
+      - Other Dept & Same Year: Fresher=35, Senior=30, BOA=25
+      - Other Dept & Other Year: Fresher=20, Senior=15, BOA=10
+    - Availability: Max 15
+    - Workload: Max 10
+    - Experience: Max 5
     """
     assigned_duties = final_workloads.get(faculty.id, 0)
+    is_same_year = (faculty.primary_year == exam.year)
+    is_same_dept = (faculty.department == exam.department)
     
-    # 1. Same Year
-    year_match = 30 if faculty.primary_year == exam.year else 0
+    # 1. Proximity & Role Tier Score (Max 70)
+    tier_score = 0
+    tier_name = ""
     
-    # 2. Same Department
-    dept_match = 20 if faculty.department == exam.department else 0
-    
-    # 3. Availability
-    availability_val = 20 if is_available else 0
-    
-    # 4. Workload balance
-    workload_val = int(15 * (1.0 - (assigned_duties / faculty.max_slots)))
-    workload_val = max(0, min(15, workload_val))
-    
-    # 5. Experience
-    exp_val = min(10, faculty.experience_years)
-    
-    # 6. Balance
-    if assigned_duties == 0:
-        balance_val = 5
-    elif assigned_duties == 1:
-        balance_val = 3
-    elif assigned_duties == 2:
-        balance_val = 1
+    if is_same_dept and is_same_year:
+        tier_name = "Same Dept & Same Year"
+        tier_score = 70 if faculty.role == "Fresher" else (60 if faculty.role == "Senior" else 50)
+    elif is_same_dept and not is_same_year:
+        tier_name = "Same Dept (Other Year)"
+        tier_score = 45 if faculty.role == "Fresher" else (40 if faculty.role == "Senior" else 35)
+    elif not is_same_dept and is_same_year:
+        tier_name = "Other Dept (Same Year)"
+        tier_score = 35 if faculty.role == "Fresher" else (30 if faculty.role == "Senior" else 25)
     else:
-        balance_val = 0
+        tier_name = "Other Dept & Other Year"
+        tier_score = 20 if faculty.role == "Fresher" else (15 if faculty.role == "Senior" else 10)
         
-    total = year_match + dept_match + availability_val + workload_val + exp_val + balance_val
+    # 2. Availability (Max 15)
+    avail_score = 15 if is_available else 0
+    
+    # 3. Workload factor (Max 10)
+    workload_val = int(10 * (1.0 - (assigned_duties / faculty.max_slots)))
+    workload_val = max(0, min(10, workload_val))
+    
+    # 4. Experience (Max 5)
+    exp_val = min(5, faculty.experience_years)
+    
+    total = tier_score + avail_score + workload_val + exp_val
     
     return {
-        "year_match": year_match,
-        "dept_match": dept_match,
-        "availability": availability_val,
+        "tier_name": tier_name,
+        "tier_score": tier_score,
+        "availability": avail_score,
         "workload": workload_val,
         "experience": exp_val,
-        "balance": balance_val,
         "total": total
     }
 
@@ -148,22 +152,29 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
     
     # Shortage Slack Penalty (very high penalty)
     for e in exams:
-        objective_terms.append(-10000 * s[e.id])
+        objective_terms.append(-100000 * s[e.id])
         
-    # Preference Scores for Assignments
+    # Preference Scores for Assignments (Hierarchical Role & Proximity Tiers)
     for e in exams:
         for f in faculty_list:
-            # Base preference score
-            pref = 0
-            # Same year match
-            if f.primary_year == e.year:
-                pref += 30
-            # Same department/program match
-            if f.department == e.department:
-                pref += 20
-            # Experience factor
-            pref += min(10, f.experience_years)
+            is_same_year = (f.primary_year == e.year)
+            is_same_dept = (f.department == e.department)
             
+            # Tier score matching
+            if is_same_dept and is_same_year:
+                # Same Department & Same Year (Top Tier)
+                tier_score = 1000 if f.role == "Fresher" else (800 if f.role == "Senior" else 600)
+            elif is_same_dept and not is_same_year:
+                # Same Department but different year
+                tier_score = 500 if f.role == "Fresher" else (400 if f.role == "Senior" else 300)
+            elif not is_same_dept and is_same_year:
+                # Different Department but same year
+                tier_score = 400 if f.role == "Fresher" else (300 if f.role == "Senior" else 200)
+            else:
+                # Different Department & Different Year
+                tier_score = 200 if f.role == "Fresher" else (150 if f.role == "Senior" else 100)
+                
+            pref = tier_score + min(10, f.experience_years)
             objective_terms.append(pref * x[(e.id, f.id)])
             
     # Workload Balancing Penalties
@@ -192,7 +203,6 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
         }
         
     # 7. Post-Process Results & Extract Assignments
-    # Track final workloads for suitability score calculation
     final_workloads = {}
     for f in faculty_list:
         final_workloads[f.id] = sum(int(solver.Value(x[(e.id, f.id)])) for e in exams)
@@ -205,13 +215,12 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
     total_assigned = 0
     cross_year_assignments = 0
     
-    # Solve status
     for e in exams:
         exam_date_day = get_day_of_week(e.date)
         shortage = int(solver.Value(s[e.id]))
         shortages_by_exam[e.course_code] = shortage
         
-        # Step 1: Extract Assigned Faculty
+        # Extract Assigned Faculty
         assigned_faculty_ids = []
         for f in faculty_list:
             if solver.Value(x[(e.id, f.id)]) == 1:
@@ -220,7 +229,7 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
                 if f.primary_year != e.year:
                     cross_year_assignments += 1
                     
-        # Step 2: Compute Suitability details for all faculty & classify
+        # Compute Suitability details for all faculty & classify
         faculty_suitability_list = []
         for f in faculty_list:
             # Check availability
@@ -238,13 +247,11 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
             if f.id in assigned_faculty_ids:
                 status_str = "Assigned"
             else:
-                # Determine rejection reason
                 if has_class:
                     rejection_reason = f"Class conflict during {exam_date_day} {e.slot.name}"
                 elif is_sim_unavail:
                     rejection_reason = "Marked unavailable (What-If)"
                 else:
-                    # Check if already assigned to another exam in this slot
                     other_exam_assigned = False
                     for other_e in slot_exams.get((e.date, e.slot_id), []):
                         if other_e.id != e.id and solver.Value(x[(other_e.id, f.id)]) == 1:
@@ -255,9 +262,8 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
                     if not other_exam_assigned:
                         if final_workloads[f.id] >= f.max_slots:
                             rejection_reason = f"Maximum workload limit reached ({f.max_slots}/{f.max_slots} slots)"
-                        elif f.primary_year != e.year:
-                            # Soft avoid
-                            rejection_reason = f"Different primary year ({f.primary_year}rd/th Year avoided for isolation)"
+                        elif f.primary_year != e.year or f.department != e.department:
+                            rejection_reason = "Avoided: non-assigned fallback candidate"
                         else:
                             rejection_reason = "Backup candidate available"
             
@@ -270,15 +276,12 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
             })
             
         # Sort candidates to determine backups
-        # Eligible backups: not assigned to anything in this slot, available, and status is currently Avoided
         eligible_backups = [
             item for item in faculty_suitability_list 
             if item["status"] == "Avoided" and item["is_available"] and not item["rejection_reason"].startswith("Assigned to")
         ]
-        # Sort by total score descending
         eligible_backups.sort(key=lambda item: item["score_card"]["total"], reverse=True)
         
-        # Take top 3 as backups
         backup_faculty_ids = set()
         for item in eligible_backups[:3]:
             item["status"] = "Backup"
@@ -304,9 +307,8 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
                 )
                 assignments_to_save.append(assignment)
                 
-            # Response list
             response_details.append({
-                "id": 0, # Placeholder
+                "id": 0,
                 "exam_id": e.id,
                 "faculty_id": f.id,
                 "faculty_name": f.name,
@@ -324,8 +326,6 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
         db.query(DutyAssignment).delete()
         db.add_all(assignments_to_save)
         db.commit()
-        # Refresh IDs
-        # (SQLAlchemy creates IDs on commit)
         
     success_rate = (total_assigned / total_required * 100) if total_required > 0 else 100.0
     

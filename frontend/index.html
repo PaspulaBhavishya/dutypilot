@@ -364,13 +364,11 @@
                                         </div>
                                         
                                         <!-- Score breakdown -->
-                                        <div class="bg-white p-2.5 rounded border border-slate-200/80 text-[10px] grid grid-cols-3 gap-y-1 gap-x-2 text-slate-500">
-                                            <div>Year Match: <strong class="text-slate-800">+{{ assign.score_breakdown?.year_match }}</strong></div>
-                                            <div>Dept Match: <strong class="text-slate-800">+{{ assign.score_breakdown?.dept_match }}</strong></div>
-                                            <div>Workload: <strong class="text-slate-800">+{{ assign.score_breakdown?.workload }}</strong></div>
+                                        <div class="bg-white p-2.5 rounded border border-slate-200/80 text-[10px] grid grid-cols-2 gap-y-1 gap-x-4 text-slate-500">
+                                            <div class="col-span-2">Priority Tier: <strong class="text-slate-800">+{{ assign.score_breakdown?.tier_score }}</strong> <span class="text-slate-400">({{ assign.score_breakdown?.tier_name }})</span></div>
                                             <div>Availability: <strong class="text-slate-800">+{{ assign.score_breakdown?.availability }}</strong></div>
+                                            <div>Workload: <strong class="text-slate-800">+{{ assign.score_breakdown?.workload }}</strong></div>
                                             <div>Experience: <strong class="text-slate-800">+{{ assign.score_breakdown?.experience }}</strong></div>
-                                            <div>Balance: <strong class="text-slate-800">+{{ assign.score_breakdown?.balance }}</strong></div>
                                         </div>
                                     </div>
                                     <div v-if="getAssignedOnly(selectedExam.assignments).length === 0" class="text-center py-4 bg-rose-50 text-rose-700 text-xs font-semibold rounded-lg border border-rose-100">
