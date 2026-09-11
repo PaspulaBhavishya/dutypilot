@@ -171,43 +171,85 @@
                     </div>
 
                     <!-- Upload and Main actions -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <!-- Excel Upload Panel -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Timetable Document Upload Panel (PDF, DOCX, XLSX) -->
                         <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
                             <div>
-                                <h4 class="font-bold text-slate-900 text-lg mb-2">Import Dataset</h4>
-                                <p class="text-xs text-slate-500 leading-relaxed mb-4">
-                                    Upload an Excel sheet with <strong>Faculty</strong>, <strong>Exams</strong>, and <strong>Timetable</strong> tabs to customize scheduling and departmens.
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-bold text-slate-900 text-base">Upload Class Timetable</h4>
+                                    <span class="px-2 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-bold rounded uppercase">PDF / DOCX / XLS</span>
+                                </div>
+                                <p class="text-xs text-slate-500 leading-relaxed mb-3">
+                                    Upload college teaching timetable to detect <strong>minute-to-minute class clashes</strong> with exams.
                                 </p>
                             </div>
                             
-                            <div class="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-lg p-6 text-center cursor-pointer transition relative bg-slate-50 group">
-                                <input type="file" @change="uploadExcel" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                                <svg class="w-8 h-8 text-slate-400 group-hover:text-indigo-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                </svg>
-                                <span class="text-xs font-semibold text-indigo-600 block">Choose file to upload</span>
-                                <span class="text-[10px] text-slate-400 block mt-1">Excel formats only (.xlsx, .xls)</span>
+                            <div class="space-y-3">
+                                <div class="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-lg p-4 text-center cursor-pointer transition relative bg-slate-50 group">
+                                    <input type="file" @change="uploadTimetableDoc" accept=".pdf, .docx, .doc, .xlsx, .xls, .csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                    <svg class="w-7 h-7 text-slate-400 group-hover:text-indigo-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <span class="text-xs font-semibold text-indigo-600 block">Select PDF or Word Timetable</span>
+                                    <span class="text-[10px] text-slate-400 block mt-0.5">.pdf, .docx, .xlsx formats</span>
+                                </div>
+                                <div class="flex items-center justify-center gap-3 text-[11px] font-semibold text-slate-500 pt-1">
+                                    <span>Download Samples:</span>
+                                    <a href="/api/timetable/sample/pdf" download="sample_timetable.pdf" class="text-indigo-600 hover:underline flex items-center gap-0.5">
+                                        📄 PDF
+                                    </a>
+                                    <span class="text-slate-300">&middot;</span>
+                                    <a href="/api/timetable/sample/docx" download="sample_timetable.docx" class="text-indigo-600 hover:underline flex items-center gap-0.5">
+                                        📝 Word
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Full Excel Dataset Upload Panel -->
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-bold text-slate-900 text-base">Import Full Dataset</h4>
+                                    <span class="px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold rounded uppercase">Master Excel</span>
+                                </div>
+                                <p class="text-xs text-slate-500 leading-relaxed mb-3">
+                                    Upload multi-sheet workbook with <strong>Faculty</strong>, <strong>Exams</strong>, and <strong>Timetable</strong> tabs.
+                                </p>
+                            </div>
+                            
+                            <div class="space-y-3">
+                                <div class="border-2 border-dashed border-slate-200 hover:border-emerald-400 rounded-lg p-4 text-center cursor-pointer transition relative bg-slate-50 group">
+                                    <input type="file" @change="uploadExcel" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                    <svg class="w-7 h-7 text-slate-400 group-hover:text-emerald-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    </svg>
+                                    <span class="text-xs font-semibold text-emerald-600 block">Choose Master Excel File</span>
+                                    <span class="text-[10px] text-slate-400 block mt-0.5">.xlsx, .xls workbooks</span>
+                                </div>
+                                <div class="text-center text-[11px] font-semibold text-slate-500 pt-1">
+                                    <a href="/api/timetable/sample/xlsx" download="sample_dutypilot_data.xlsx" class="text-emerald-600 hover:underline">
+                                        📊 Download Master Excel Template
+                                    </a>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Solver Description Panel -->
-                        <div class="lg:col-span-2 bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-8 rounded-xl shadow-md flex flex-col justify-between">
+                        <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 rounded-xl shadow-md flex flex-col justify-between">
                             <div>
-                                <div class="flex items-center gap-2 mb-3">
+                                <div class="flex items-center gap-2 mb-2">
                                     <span class="px-2 py-0.5 bg-indigo-500 text-[10px] uppercase font-bold tracking-wider rounded">Google OR-Tools</span>
-                                    <span class="px-2 py-0.5 bg-emerald-500 text-[10px] uppercase font-bold tracking-wider rounded">CP-SAT</span>
+                                    <span class="px-2 py-0.5 bg-emerald-500 text-[10px] uppercase font-bold tracking-wider rounded">Minute Overlap Engine</span>
                                 </div>
-                                <h3 class="text-xl font-bold mb-2">Intelligent Constraint Optimization Engine</h3>
+                                <h3 class="text-base font-bold mb-1.5">Intelligent Constraint Optimization</h3>
                                 <p class="text-xs text-indigo-200 leading-relaxed">
-                                    DutyPilot compiles your exam dates, dynamic slots, faculty workloads, year isolation preferences, and weekly teaching timetables into a math program. The CP-SAT solver explores all configurations to minimize conflicts, balance duty workloads fairly, and avoid unnecessary senior faculty assignments.
+                                    Calculates time intersections <code class="text-[11px] bg-indigo-950 px-1 py-0.5 rounded">max(start1, start2) &lt; min(end1, end2)</code> to eliminate class clashes, and optimizes workload fairness with CP-SAT.
                                 </p>
                             </div>
-                            <div class="mt-6 flex items-center justify-between border-t border-indigo-800/60 pt-4">
-                                <div class="text-xs text-indigo-300">
-                                    Status: <strong class="text-indigo-100">Ready to Optimize</strong>
-                                </div>
-                                <button @click="triggerAllocation" class="px-6 py-2.5 bg-white hover:bg-slate-100 active:bg-slate-200 text-indigo-950 font-bold rounded-lg text-xs tracking-wide shadow transition uppercase">
+                            <div class="mt-4 pt-3 border-t border-indigo-800/60 flex items-center justify-between">
+                                <span class="text-xs text-indigo-300">Ready to Schedule</span>
+                                <button @click="triggerAllocation" class="px-5 py-2 bg-white hover:bg-slate-100 text-indigo-950 font-bold rounded-lg text-xs shadow uppercase tracking-wider transition">
                                     Run Optimization
                                 </button>
                             </div>
@@ -836,49 +878,86 @@
             </div>
         </div>
 
-        <!-- MODAL: Timetable Edit Form -->
+        <!-- MODAL: Faculty Daily Classes Timetable Manager -->
         <div v-if="timetableModalFaculty" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 p-4">
-            <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl border border-slate-100 overflow-hidden">
-                <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
                     <div>
-                        <h4 class="font-bold text-base">{{ timetableModalFaculty.name }} &mdash; Timetable Config</h4>
-                        <p class="text-[10px] text-slate-300">Toggle slots where this faculty teaches a class (Red = teaching/busy, Grey = available/free)</p>
+                        <h4 class="font-bold text-base">{{ timetableModalFaculty.name }} &mdash; Daily Classes Timetable</h4>
+                        <p class="text-[10px] text-slate-300">Class periods with exact times used for minute-to-minute exam overlap collision detection</p>
                     </div>
                     <button @click="timetableModalFaculty = null" class="text-white hover:text-slate-200 text-xl font-medium leading-none">&times;</button>
                 </div>
                 
-                <div class="p-6 overflow-x-auto text-sm space-y-4">
-                    
-                    <table class="w-full text-center border-collapse border border-slate-200">
-                        <thead>
-                            <tr class="bg-slate-50 text-xs font-bold text-slate-500">
-                                <th class="border border-slate-200 p-2.5">Day of Week</th>
-                                <th v-for="s in slots" :key="s.id" class="border border-slate-200 p-2.5">
-                                    {{ s.name }}
-                                    <span class="block text-[9px] text-slate-400 font-normal">({{ s.start_time }}-{{ s.end_time }})</span>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']" :key="day">
-                                <td class="border border-slate-200 p-2 font-semibold text-xs bg-slate-50/50 text-slate-700">{{ day }}</td>
-                                <td v-for="s in slots" :key="s.id" class="border border-slate-200 p-2">
-                                    <button 
-                                        @click="toggleTimetableSlot(day, s.id)" 
-                                        :class="isTeachingSlot(day, s.id) ? 'bg-rose-500 text-white border-rose-600' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'"
-                                        class="w-full py-2.5 px-1.5 rounded border text-[11px] font-bold shadow-sm transition"
-                                    >
-                                        {{ isTeachingSlot(day, s.id) ? 'Teaching Class' : 'Free' }}
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    
-                    <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
-                        <button @click="timetableModalFaculty = null" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition">Cancel</button>
-                        <button @click="saveTimetable" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">Save Schedule</button>
+                <div class="p-6 overflow-y-auto space-y-5 text-sm flex-1">
+                    <!-- Existing Classes List -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Scheduled Class Periods ({{ timetableModalData.length }})</h5>
+                            <span class="text-[11px] text-slate-400">Overlap detects any clash with exam start/end times</span>
+                        </div>
+                        
+                        <div v-if="timetableModalData.length > 0" class="border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-64 overflow-y-auto">
+                            <div v-for="item in timetableModalData" :key="item.id" class="p-3 hover:bg-slate-50 flex items-center justify-between gap-4 text-xs">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-20 font-bold text-indigo-700 px-2 py-0.5 bg-indigo-50 border border-indigo-100 rounded text-center">
+                                        {{ item.day_of_week }}
+                                    </span>
+                                    <span class="font-semibold text-slate-800">
+                                        {{ item.start_time }} &ndash; {{ item.end_time }}
+                                    </span>
+                                    <span class="text-slate-600 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+                                        {{ item.class_name }}
+                                    </span>
+                                </div>
+                                <button @click="deleteClassPeriod(item.id)" class="text-rose-600 hover:text-rose-800 p-1 hover:bg-rose-50 rounded transition" title="Delete class period">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div v-else class="text-center py-6 bg-slate-50 border border-slate-200 border-dashed rounded-lg text-slate-400 text-xs">
+                            No class periods recorded yet for this faculty member.
+                        </div>
                     </div>
+
+                    <!-- Add New Class Period Form -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                        <h6 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                            <span class="w-2 h-2 bg-indigo-600 rounded-full"></span>
+                            Add Class Period
+                        </h6>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 mb-1">Day of Week</label>
+                                <select v-model="newClassPeriod.day_of_week" class="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                                    <option v-for="d in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']" :key="d" :value="d">{{ d }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 mb-1">Start Time (24h)</label>
+                                <input type="text" v-model="newClassPeriod.start_time" placeholder="09:30" class="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 mb-1">End Time (24h)</label>
+                                <input type="text" v-model="newClassPeriod.end_time" placeholder="10:30" class="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 mb-1">Subject / Class</label>
+                                <input type="text" v-model="newClassPeriod.class_name" placeholder="e.g. DBMS Lecture" class="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            </div>
+                        </div>
+                        <div class="text-right pt-1">
+                            <button @click="addClassPeriod" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs shadow-sm transition">
+                                + Add Class Period
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end shrink-0">
+                    <button @click="timetableModalFaculty = null" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+                        Done
+                    </button>
                 </div>
             </div>
         </div>
@@ -1082,9 +1161,9 @@
                 // Stylings helper
                 const getAvoidReasonClass = (reason) => {
                     if (!reason) return 'bg-slate-100 text-slate-600';
-                    if (reason.includes('Class conflict')) return 'bg-rose-50 border border-rose-100 text-rose-700 font-semibold';
+                    if (reason.includes('Class clash') || reason.includes('Class conflict')) return 'bg-rose-50 border border-rose-200 text-rose-700 font-semibold';
                     if (reason.includes('Maximum workload')) return 'bg-amber-50 border border-amber-100 text-amber-700 font-semibold';
-                    if (reason.includes('Different primary year')) return 'bg-slate-100 border border-slate-200 text-slate-600';
+                    if (reason.includes('Different primary year') || reason.includes('non-assigned')) return 'bg-slate-100 border border-slate-200 text-slate-600';
                     return 'bg-slate-50 text-slate-500';
                 };
 
@@ -1189,9 +1268,36 @@
                     } catch (e) { triggerToast('API error', 'error'); }
                 };
 
+                // Timetable Document Upload (PDF, DOCX, XLSX, CSV)
+                const uploadTimetableDoc = async (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    try {
+                        triggerToast('Parsing timetable document (PDF/DOCX/Excel)...');
+                        const res = await fetch('/api/timetable/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            triggerToast(data.detail);
+                            await fetchAllData();
+                        } else {
+                            triggerToast(data.detail || 'Failed to parse timetable file.', 'error');
+                        }
+                    } catch (e) {
+                        triggerToast('Timetable upload network error.', 'error');
+                    }
+                };
+
                 // Timetable Editor Modal Handlers
+                const newClassPeriod = ref({ day_of_week: 'Monday', start_time: '09:30', end_time: '10:30', class_name: '' });
+
                 const openTimetableModal = async (fac) => {
                     timetableModalFaculty.value = fac;
+                    newClassPeriod.value = { day_of_week: 'Monday', start_time: '09:30', end_time: '10:30', class_name: '' };
                     try {
                         const res = await fetch(`/api/timetable/${fac.id}`);
                         timetableModalData.value = await res.json();
@@ -1200,33 +1306,36 @@
                     }
                 };
 
-                const isTeachingSlot = (day, slotId) => {
-                    const s = timetableModalData.value.find(item => item.day_of_week === day && item.slot_id === slotId);
-                    return s ? s.is_teaching : false;
-                };
-
-                const toggleTimetableSlot = (day, slotId) => {
-                    const s = timetableModalData.value.find(item => item.day_of_week === day && item.slot_id === slotId);
-                    if (s) {
-                        s.is_teaching = !s.is_teaching;
-                    }
-                };
-
-                const saveTimetable = async () => {
-                    if (!timetableModalFaculty.value) return;
+                const addClassPeriod = async () => {
+                    if (!timetableModalFaculty.value || !newClassPeriod.value.start_time || !newClassPeriod.value.end_time) return;
                     try {
-                        const res = await fetch(`/api/timetable/${timetableModalFaculty.value.id}`, {
-                            method: 'PUT',
+                        const res = await fetch(`/api/timetable/${timetableModalFaculty.value.id}/classes`, {
+                            method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(timetableModalData.value)
+                            body: JSON.stringify(newClassPeriod.value)
                         });
                         if (res.ok) {
-                            timetableModalFaculty.value = null;
-                            triggerToast('Faculty teaching schedule saved.');
+                            triggerToast('Class period added.');
+                            newClassPeriod.value.class_name = '';
+                            const getRes = await fetch(`/api/timetable/${timetableModalFaculty.value.id}`);
+                            timetableModalData.value = await getRes.json();
+                        } else {
+                            triggerToast('Failed to add class period.', 'error');
                         }
-                    } catch (e) {
-                        triggerToast('Error saving timetable.', 'error');
-                    }
+                    } catch (e) { triggerToast('API error', 'error'); }
+                };
+
+                const deleteClassPeriod = async (classId) => {
+                    try {
+                        const res = await fetch(`/api/timetable/classes/${classId}`, { method: 'DELETE' });
+                        if (res.ok) {
+                            triggerToast('Class period removed.');
+                            const getRes = await fetch(`/api/timetable/${timetableModalFaculty.value.id}`);
+                            timetableModalData.value = await getRes.json();
+                        } else {
+                            triggerToast('Failed to remove class period.', 'error');
+                        }
+                    } catch (e) { triggerToast('API error', 'error'); }
                 };
 
                 // CRUD - Exams
@@ -1358,9 +1467,10 @@
                     addFaculty,
                     deleteFaculty,
                     openTimetableModal,
-                    isTeachingSlot,
-                    toggleTimetableSlot,
-                    saveTimetable,
+                    uploadTimetableDoc,
+                    newClassPeriod,
+                    addClassPeriod,
+                    deleteClassPeriod,
                     addExam,
                     deleteExam,
                     toggleFacultySimulation,

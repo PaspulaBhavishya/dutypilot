@@ -32,8 +32,11 @@ class TimeSlotResponse(TimeSlotBase):
 # Faculty Timetable Schemas
 class FacultyTimetableBase(BaseModel):
     day_of_week: str
-    slot_id: int
-    is_teaching: bool
+    class_name: Optional[str] = "Lecture"
+    start_time: str
+    end_time: str
+    slot_id: Optional[int] = None
+    is_teaching: bool = True
 
 class FacultyTimetableCreate(FacultyTimetableBase):
     pass
@@ -74,6 +77,8 @@ class ExamBase(BaseModel):
     year: int
     date: str
     slot_id: int
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
     required_invigilators: int
 
 class ExamCreate(ExamBase):
@@ -111,6 +116,8 @@ class ExamWithAssignmentsResponse(BaseModel):
     year: int
     date: str
     slot: Optional[TimeSlotResponse] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
     required_invigilators: int
     assignments: List[DutyAssignmentResponse] = []
 
@@ -129,5 +136,5 @@ class ScenarioComparisonResponse(BaseModel):
     success_rate: float
     conflicts_count: int
     cross_year_assignments: int
-    shortages: Dict[str, int] # course_code -> missing count
+    shortages: Dict[str, int]
     assignments: List[DutyAssignmentResponse] = []

@@ -1,8 +1,9 @@
 import io
 import csv
 import json
+import os
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
-from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.responses import StreamingResponse, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -15,11 +16,17 @@ from .schemas import (
     DepartmentCreate, DepartmentResponse,
     TimeSlotCreate, TimeSlotResponse,
     FacultyCreate, FacultyResponse,
+    FacultyTimetableCreate, FacultyTimetableResponse,
     ExamCreate, ExamResponse,
     DutyAssignmentResponse, ExamWithAssignmentsResponse,
     SimulationToggle, ScenarioComparisonResponse
 )
 from .scheduler import solve_allocation
+from .parsers import (
+    parse_pdf_timetable,
+    parse_docx_timetable,
+    parse_excel_or_csv_timetable
+)
 
 # Create Tables
 Base.metadata.create_all(bind=engine)
@@ -92,7 +99,6 @@ def get_faculty(db: Session = Depends(get_db)):
 
 @app.post("/api/faculty", response_model=FacultyResponse)
 def create_faculty(fac: FacultyCreate, db: Session = Depends(get_db)):
-    # Calculate max slots based on role
     role_slots = {"BOA": 2, "Senior": 3, "Fresher": 4}
     max_slots = role_slots.get(fac.role, 3)
     
@@ -106,16 +112,6 @@ def create_faculty(fac: FacultyCreate, db: Session = Depends(get_db)):
         max_slots=max_slots
     )
     db.add(new_fac)
-    db.commit()
-    db.refresh(new_fac)
-    
-    # Initialize timetable entries for all slots and week days
-    slots = db.query(TimeSlot).all()
-    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-    for day in days:
-        for s in slots:
-            tt = FacultyTimetable(faculty_id=new_fac.id, day_of_week=day, slot_id=s.id, is_teaching=False)
-            db.add(tt)
     db.commit()
     db.refresh(new_fac)
     return new_fac
@@ -154,23 +150,103 @@ def get_faculty_timetable(fac_id: int, db: Session = Depends(get_db)):
         res.append({
             "id": item.id,
             "day_of_week": item.day_of_week,
-            "slot_id": item.slot_id,
-            "slot_name": item.slot.name if item.slot else f"Slot {item.slot_id}",
+            "class_name": item.class_name or "Lecture",
+            "start_time": item.start_time,
+            "end_time": item.end_time,
             "is_teaching": item.is_teaching
         })
     return res
 
-@app.put("/api/timetable/{fac_id}")
-def update_faculty_timetable(fac_id: int, schedule: List[dict], db: Session = Depends(get_db)):
-    # schedule contains: [{"day_of_week": "Monday", "slot_id": 1, "is_teaching": true}]
-    for item in schedule:
-        db.query(FacultyTimetable).filter(
-            FacultyTimetable.faculty_id == fac_id,
-            FacultyTimetable.day_of_week == item["day_of_week"],
-            FacultyTimetable.slot_id == item["slot_id"]
-        ).update({FacultyTimetable.is_teaching: item["is_teaching"]})
+@app.post("/api/timetable/{fac_id}/classes")
+def add_faculty_class(fac_id: int, payload: dict, db: Session = Depends(get_db)):
+    """Adds a new daily class period for a faculty member."""
+    fac = db.query(Faculty).filter(Faculty.id == fac_id).first()
+    if not fac:
+        raise HTTPException(status_code=404, detail="Faculty not found.")
+        
+    new_class = FacultyTimetable(
+        faculty_id=fac_id,
+        day_of_week=payload.get("day_of_week", "Monday"),
+        class_name=payload.get("class_name", "Lecture"),
+        start_time=payload.get("start_time", "09:30"),
+        end_time=payload.get("end_time", "10:30"),
+        is_teaching=True
+    )
+    db.add(new_class)
     db.commit()
-    return {"detail": "Timetable updated successfully"}
+    db.refresh(new_class)
+    return {"detail": "Class period added successfully", "id": new_class.id}
+
+@app.delete("/api/timetable/classes/{class_id}")
+def delete_faculty_class(class_id: int, db: Session = Depends(get_db)):
+    """Deletes a specific class period."""
+    item = db.query(FacultyTimetable).filter(FacultyTimetable.id == class_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Class period not found.")
+    db.delete(item)
+    db.commit()
+    return {"detail": "Class period deleted successfully"}
+
+# Document Upload for Timetables (PDF, DOCX, XLSX, CSV)
+@app.post("/api/timetable/upload")
+async def upload_timetable_document(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    contents = await file.read()
+    filename = file.filename.lower()
+    
+    extracted_classes = []
+    try:
+        if filename.endswith(".pdf"):
+            extracted_classes = parse_pdf_timetable(contents)
+        elif filename.endswith(".docx") or filename.endswith(".doc"):
+            extracted_classes = parse_docx_timetable(contents)
+        elif filename.endswith(".xlsx") or filename.endswith(".xls") or filename.endswith(".csv"):
+            extracted_classes = parse_excel_or_csv_timetable(contents, filename)
+        else:
+            raise HTTPException(status_code=400, detail="Supported formats: .pdf, .docx, .xlsx, .csv")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to parse document: {str(e)}")
+        
+    if not extracted_classes:
+        raise HTTPException(status_code=400, detail="No readable class timetable entries found in file.")
+        
+    # Match faculty and insert into database
+    all_faculty = db.query(Faculty).all()
+    inserted_count = 0
+    
+    for item in extracted_classes:
+        fac_id_str = item["faculty_identifier"].strip().lower()
+        
+        # Match by email or name
+        matched_fac = None
+        for f in all_faculty:
+            if f.email.lower() in fac_id_str or fac_id_str in f.email.lower():
+                matched_fac = f
+                break
+            if f.name.lower() in fac_id_str or fac_id_str in f.name.lower():
+                matched_fac = f
+                break
+                
+        if matched_fac:
+            tt = FacultyTimetable(
+                faculty_id=matched_fac.id,
+                day_of_week=item["day_of_week"],
+                class_name=item["class_name"],
+                start_time=item["start_time"],
+                end_time=item["end_time"],
+                is_teaching=item["is_teaching"]
+            )
+            db.add(tt)
+            inserted_count += 1
+            
+    db.commit()
+    return {
+        "detail": f"Successfully parsed and loaded {inserted_count} class periods across faculty schedules.",
+        "total_parsed": len(extracted_classes),
+        "inserted_count": inserted_count
+    }
 
 # --- Exam Endpoints ---
 @app.get("/api/exams", response_model=List[ExamResponse])
@@ -179,6 +255,10 @@ def get_exams(db: Session = Depends(get_db)):
 
 @app.post("/api/exams", response_model=ExamResponse)
 def create_exam(exam: ExamCreate, db: Session = Depends(get_db)):
+    slot = db.query(TimeSlot).filter(TimeSlot.id == exam.slot_id).first()
+    start_t = exam.start_time or (slot.start_time if slot else "08:15")
+    end_t = exam.end_time or (slot.end_time if slot else "10:15")
+    
     new_exam = Exam(
         course_code=exam.course_code,
         course_name=exam.course_name,
@@ -186,6 +266,8 @@ def create_exam(exam: ExamCreate, db: Session = Depends(get_db)):
         year=exam.year,
         date=exam.date,
         slot_id=exam.slot_id,
+        start_time=start_t,
+        end_time=end_t,
         required_invigilators=exam.required_invigilators
     )
     db.add(new_exam)
@@ -212,7 +294,6 @@ def run_allocation(db: Session = Depends(get_db)):
 
 @app.post("/api/allocations/simulate")
 def run_simulation(db: Session = Depends(get_db)):
-    # Runs the solver in simulation mode respecting is_simulated_unavailable fields
     res = solve_allocation(db, is_simulation=True)
     if res["status"] == "error":
         raise HTTPException(status_code=400, detail=res["message"])
@@ -251,6 +332,8 @@ def get_current_roster(db: Session = Depends(get_db)):
             year=e.year,
             date=e.date,
             slot=e.slot,
+            start_time=e.start_time or (e.slot.start_time if e.slot else "08:15"),
+            end_time=e.end_time or (e.slot.end_time if e.slot else "10:15"),
             required_invigilators=e.required_invigilators,
             assignments=assigns_res
         ))
@@ -262,9 +345,8 @@ def export_roster(db: Session = Depends(get_db)):
     output = io.StringIO()
     writer = csv.writer(output)
     
-    # Write CSV Header
     writer.writerow([
-        "Exam Date", "Time Slot", "Course Code", "Course Name", "Exam Dept", "Exam Year",
+        "Exam Date", "Exam Time Window", "Time Slot", "Course Code", "Course Name", "Exam Dept", "Exam Year",
         "Faculty Name", "Faculty Role", "Faculty Dept", "Faculty Primary Year", 
         "Suitability Score", "Status", "Reason for Backup/Avoided"
     ])
@@ -272,12 +354,15 @@ def export_roster(db: Session = Depends(get_db)):
     for e in exams:
         assignments = db.query(DutyAssignment).filter(DutyAssignment.exam_id == e.id).all()
         slot_name = e.slot.name if e.slot else f"Slot {e.slot_id}"
-        slot_times = f"{e.slot.start_time}-{e.slot.end_time}" if e.slot else ""
+        e_start = e.start_time or (e.slot.start_time if e.slot else "")
+        e_end = e.end_time or (e.slot.end_time if e.slot else "")
+        time_window = f"{e_start} - {e_end}"
         
         for a in assignments:
             writer.writerow([
                 e.date,
-                f"{slot_name} ({slot_times})",
+                time_window,
+                slot_name,
                 e.course_code,
                 e.course_name,
                 e.department,
@@ -297,7 +382,21 @@ def export_roster(db: Session = Depends(get_db)):
     }
     return StreamingResponse(output, media_type="text/csv", headers=headers)
 
-# --- Excel / CSV Upload Endpoint ---
+# Sample Document Downloads
+@app.get("/api/timetable/sample/{file_format}")
+def download_sample_timetable(file_format: str):
+    file_format = file_format.lower()
+    path = f"sample_timetable.{file_format}"
+    if os.path.exists(path):
+        media_types = {
+            "pdf": "application/pdf",
+            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        }
+        return FileResponse(path, media_type=media_types.get(file_format, "application/octet-stream"), filename=path)
+    raise HTTPException(status_code=404, detail="Sample file not found.")
+
+# Excel / CSV Full Dataset Upload
 @app.post("/api/allocations/upload")
 async def upload_dataset(
     file: UploadFile = File(...),
@@ -308,13 +407,10 @@ async def upload_dataset(
     
     try:
         if filename.endswith(".xlsx") or filename.endswith(".xls"):
-            # Excel file with sheets: "Faculty", "Exams", "Timetable"
             xls = pd.ExcelFile(io.BytesIO(contents))
             
-            # 1. Parse Departments if sheet exists, or extract from faculty
             if "Faculty" in xls.sheet_names:
                 df_fac = pd.read_excel(xls, "Faculty")
-                # Seed departments from the unique values in Excel
                 unique_depts = df_fac["Department"].dropna().unique()
                 for d_name in unique_depts:
                     d_name = str(d_name).strip()
@@ -322,7 +418,6 @@ async def upload_dataset(
                         db.add(Department(name=d_name))
                 db.commit()
                 
-                # Delete existing faculty and timetables before reloading
                 db.query(FacultyTimetable).delete()
                 db.query(DutyAssignment).delete()
                 db.query(Faculty).delete()
@@ -345,19 +440,15 @@ async def upload_dataset(
                     db.add(fac)
                 db.commit()
                 
-            # 2. Parse Exams
             if "Exams" in xls.sheet_names:
                 df_ex = pd.read_excel(xls, "Exams")
-                # Make sure we clear existing exams
                 db.query(Exam).delete()
                 db.commit()
                 
                 for _, row in df_ex.iterrows():
                     slot_name = str(row["Slot Name"]).strip()
-                    # Check if slot exists or create dynamic timeslot
                     db_slot = db.query(TimeSlot).filter(TimeSlot.name == slot_name).first()
                     if not db_slot:
-                        # Define a default range if it's missing from db
                         db_slot = TimeSlot(name=slot_name, start_time="08:15", end_time="10:15")
                         db.add(db_slot)
                         db.commit()
@@ -368,60 +459,49 @@ async def upload_dataset(
                         course_name=str(row["Course Name"]).strip(),
                         department=str(row["Department"]).strip(),
                         year=int(row["Year"]),
-                        date=str(row["Date"]).split(" ")[0].strip(), # YYYY-MM-DD format
+                        date=str(row["Date"]).split(" ")[0].strip(),
                         slot_id=db_slot.id,
+                        start_time=db_slot.start_time,
+                        end_time=db_slot.end_time,
                         required_invigilators=int(row["Required Invigilators"])
                     )
                     db.add(ex)
                 db.commit()
                 
-            # 3. Parse Timetables
-            # Initialize default (empty) timetable slots for all loaded faculty
-            all_faculty = db.query(Faculty).all()
-            all_slots = db.query(TimeSlot).all()
-            days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-            for f in all_faculty:
-                for day in days:
-                    for s in all_slots:
-                        tt = FacultyTimetable(faculty_id=f.id, day_of_week=day, slot_id=s.id, is_teaching=False)
-                        db.add(tt)
-            db.commit()
-
             if "Timetable" in xls.sheet_names:
                 df_tt = pd.read_excel(xls, "Timetable")
-                # Expects columns: Faculty Email, Day of Week, Slot Name, Is Teaching (1/0 or Yes/No)
                 for _, row in df_tt.iterrows():
-                    email = str(row["Faculty Email"]).strip()
-                    day = str(row["Day of Week"]).strip()
-                    slot_n = str(row["Slot Name"]).strip()
-                    is_t = str(row["Is Teaching"]).strip().lower() in ("1", "1.0", "true", "yes", "teaching")
+                    email = str(row.get("Faculty Email", "")).strip()
+                    day = str(row.get("Day of Week", "Monday")).strip()
+                    subject = str(row.get("Subject", row.get("Class Name", "Lecture"))).strip()
+                    st = str(row.get("Start Time", "09:30")).strip()
+                    et = str(row.get("End Time", "10:30")).strip()
                     
                     fac = db.query(Faculty).filter(Faculty.email == email).first()
-                    slot = db.query(TimeSlot).filter(TimeSlot.name == slot_n).first()
-                    if fac and slot:
-                        db.query(FacultyTimetable).filter(
-                            FacultyTimetable.faculty_id == fac.id,
-                            FacultyTimetable.day_of_week == day,
-                            FacultyTimetable.slot_id == slot.id
-                        ).update({FacultyTimetable.is_teaching: is_t})
+                    if fac:
+                        tt = FacultyTimetable(
+                            faculty_id=fac.id,
+                            day_of_week=day,
+                            class_name=subject,
+                            start_time=st,
+                            end_time=et,
+                            is_teaching=True
+                        )
+                        db.add(tt)
                 db.commit()
                 
             return {"detail": "Excel file uploaded and parsed successfully."}
-            
         else:
-            raise HTTPException(status_code=400, detail="Only Excel files (.xlsx, .xls) are currently supported.")
+            raise HTTPException(status_code=400, detail="Only Excel files (.xlsx, .xls) are supported here.")
             
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Failed to parse file: {str(e)}")
 
-# Mount frontend files at the root
-# In standard deployment, the HTML dashboard will be served directly by FastAPI.
-# We will read index.html and return it.
 @app.get("/", response_class=HTMLResponse)
 def get_dashboard():
     try:
         with open("frontend/index.html", "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
-        return HTMLResponse(content="<h1>DutyPilot Dashboard index.html not found.</h1><p>Ensure it exists under frontend/index.html</p>")
+        return HTMLResponse(content="<h1>DutyPilot Dashboard index.html not found.</h1>")

@@ -38,8 +38,11 @@ class FacultyTimetable(Base):
     id = Column(Integer, primary_key=True, index=True)
     faculty_id = Column(Integer, ForeignKey("faculty.id"), nullable=False)
     day_of_week = Column(String, nullable=False) # Monday, Tuesday, ...
-    slot_id = Column(Integer, ForeignKey("time_slots.id"), nullable=False)
-    is_teaching = Column(Boolean, default=False, nullable=False)
+    class_name = Column(String, default="Lecture", nullable=True)
+    start_time = Column(String, nullable=False) # e.g. "09:30" (24hr format)
+    end_time = Column(String, nullable=False)   # e.g. "10:30" (24hr format)
+    slot_id = Column(Integer, ForeignKey("time_slots.id"), nullable=True) # Optional legacy mapping
+    is_teaching = Column(Boolean, default=True, nullable=False)
 
     faculty = relationship("Faculty", back_populates="timetable")
     slot = relationship("TimeSlot")
@@ -54,6 +57,8 @@ class Exam(Base):
     year = Column(Integer, nullable=False) # 1, 2, 3, 4
     date = Column(String, nullable=False) # YYYY-MM-DD
     slot_id = Column(Integer, ForeignKey("time_slots.id"), nullable=False)
+    start_time = Column(String, nullable=True) # e.g. "09:30", falls back to slot.start_time
+    end_time = Column(String, nullable=True)   # e.g. "12:30", falls back to slot.end_time
     required_invigilators = Column(Integer, nullable=False)
 
     slot = relationship("TimeSlot")
@@ -68,7 +73,7 @@ class DutyAssignment(Base):
     suitability_score = Column(Integer, nullable=False)
     status = Column(String, nullable=False) # Assigned, Backup, Avoided
     rejection_reason = Column(String, nullable=True)
-    score_breakdown = Column(String, nullable=True) # JSON String: {"year_match": 30, ...}
+    score_breakdown = Column(String, nullable=True) # JSON String: {"tier_score": 70, ...}
 
     exam = relationship("Exam", back_populates="assignments")
     faculty = relationship("Faculty", back_populates="duties")

@@ -4,12 +4,38 @@ from ortools.sat.python import cp_model
 from sqlalchemy.orm import Session
 from .models import Faculty, FacultyTimetable, Exam, DutyAssignment, TimeSlot
 
+def to_minutes(t_str: str) -> int:
+    """Converts 'HH:MM' string to minutes from midnight."""
+    try:
+        parts = t_str.strip().split(":")
+        return int(parts[0]) * 60 + int(parts[1])
+    except Exception:
+        return 0
+
+def times_overlap(start1_str: str, end1_str: str, start2_str: str, end2_str: str) -> bool:
+    """
+    Checks if interval [start1, end1] overlaps with [start2, end2].
+    Times in 'HH:MM' format.
+    Overlap condition: max(start1, start2) < min(end1, end2)
+    """
+    s1, e1 = to_minutes(start1_str), to_minutes(end1_str)
+    s2, e2 = to_minutes(start2_str), to_minutes(end2_str)
+    return max(s1, s2) < min(e1, e2)
+
 def get_day_of_week(date_str: str) -> str:
     """Returns the day of the week for a given YYYY-MM-DD date."""
     try:
         return datetime.strptime(date_str, "%Y-%m-%d").strftime("%A")
     except ValueError:
-        return "Monday" # Fallback
+        return "Monday"
+
+def get_exam_times(exam: Exam) -> tuple:
+    """Returns (start_time, end_time) for an exam."""
+    if exam.start_time and exam.end_time:
+        return exam.start_time, exam.end_time
+    if exam.slot:
+        return exam.slot.start_time, exam.slot.end_time
+    return "08:15", "10:15"
 
 def calculate_suitability(faculty: Faculty, exam: Exam, final_workloads: dict, is_available: bool) -> dict:
     """
@@ -67,22 +93,28 @@ def calculate_suitability(faculty: Faculty, exam: Exam, final_workloads: dict, i
 
 def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
     """
-    Solves the exam invigilation problem using Google OR-Tools CP-SAT.
+    Solves the exam invigilation problem using Google OR-Tools CP-SAT
+    with exact minute-to-minute class overlap detection.
     """
-    # 1. Fetch all datasets
+    # 1. Fetch datasets
     exams = db.query(Exam).all()
     faculty_list = db.query(Faculty).all()
-    slots = db.query(TimeSlot).all()
     
     if not exams or not faculty_list:
         return {"status": "error", "message": "No exams or faculty members found."}
         
-    # Map timetables for quick lookup
-    # timetable_map[(faculty_id, day, slot_id)] = is_teaching
-    timetables = db.query(FacultyTimetable).all()
-    tt_map = {}
+    # Map faculty daily teaching classes: (faculty_id, day_of_week) -> list of classes
+    timetables = db.query(FacultyTimetable).filter(FacultyTimetable.is_teaching == True).all()
+    faculty_classes = {}
     for tt in timetables:
-        tt_map[(tt.faculty_id, tt.day_of_week, tt.slot_id)] = tt.is_teaching
+        key = (tt.faculty_id, tt.day_of_week)
+        if key not in faculty_classes:
+            faculty_classes[key] = []
+        faculty_classes[key].append({
+            "class_name": tt.class_name or "Lecture",
+            "start_time": tt.start_time,
+            "end_time": tt.end_time
+        })
 
     # Initialize CP-SAT Model
     model = cp_model.CpModel()
@@ -106,51 +138,57 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
     for f in faculty_list:
         model.Add(sum(x[(e.id, f.id)] for e in exams) <= f.max_slots)
         
-    # C3: No double booking / overlap in the same slot
-    # Group exams by (date, slot_id)
-    slot_exams = {}
-    for e in exams:
-        key = (e.date, e.slot_id)
-        if key not in slot_exams:
-            slot_exams[key] = []
-        slot_exams[key].append(e)
-        
-    for (date, slot_id), exam_subset in slot_exams.items():
-        for f in faculty_list:
-            model.Add(sum(x[(e.id, f.id)] for e in exam_subset) <= 1)
+    # C3: No overlapping duties for any faculty on the same day
+    # Check all pairs of exams on the same date
+    for i in range(len(exams)):
+        for j in range(i + 1, len(exams)):
+            e1, e2 = exams[i], exams[j]
+            if e1.date == e2.date:
+                s1, end1 = get_exam_times(e1)
+                s2, end2 = get_exam_times(e2)
+                if times_overlap(s1, end1, s2, end2):
+                    for f in faculty_list:
+                        model.Add(x[(e1.id, f.id)] + x[(e2.id, f.id)] <= 1)
             
-    # C4: Timetable class conflicts & Simulated Unavailability
+    # C4: Minute-to-Minute Class Conflicts & Simulated Unavailability
+    class_clash_map = {} # (exam_id, faculty_id) -> clash reason string
     for e in exams:
         day = get_day_of_week(e.date)
+        e_start, e_end = get_exam_times(e)
+        
         for f in faculty_list:
-            # Check timetable conflict
-            has_class = tt_map.get((f.id, day, e.slot_id), False)
-            # Check if unavailable in simulation sandbox
             is_sim_unavailable = is_simulation and f.is_simulated_unavailable
             
-            if has_class or is_sim_unavailable:
+            # Check minute-to-minute class overlaps on that day
+            classes_today = faculty_classes.get((f.id, day), [])
+            has_class_clash = False
+            for c in classes_today:
+                if times_overlap(c["start_time"], c["end_time"], e_start, e_end):
+                    has_class_clash = True
+                    class_clash_map[(e.id, f.id)] = (
+                        f"Class clash: '{c['class_name']}' ({c['start_time']}–{c['end_time']}) "
+                        f"overlaps with exam ({e_start}–{e_end})"
+                    )
+                    break
+                    
+            if has_class_clash or is_sim_unavailable:
                 model.Add(x[(e.id, f.id)] == 0)
 
     # 4. Fairness Optimization & Workload step penalties
-    # Create auxiliary variables to represent duties assigned to each faculty
-    # y[f.id, k] = 1 if faculty has >= k duties
     y = {}
     for f in faculty_list:
         max_d = f.max_slots
         for k in range(1, max_d + 1):
             y[(f.id, k)] = model.NewBoolVar(f"y_{f.id}_{k}")
             
-        # Sum of assignments = sum of y's
         model.Add(sum(x[(e.id, f.id)] for e in exams) == sum(y[(f.id, k)] for k in range(1, max_d + 1)))
-        
-        # Order the y's: y_1 >= y_2 >= y_3 ...
         for k in range(1, max_d):
             model.Add(y[(f.id, k)] >= y[(f.id, k + 1)])
 
     # 5. Objective Function Formulation
     objective_terms = []
     
-    # Shortage Slack Penalty (very high penalty)
+    # Shortage Slack Penalty
     for e in exams:
         objective_terms.append(-100000 * s[e.id])
         
@@ -160,31 +198,21 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
             is_same_year = (f.primary_year == e.year)
             is_same_dept = (f.department == e.department)
             
-            # Tier score matching
             if is_same_dept and is_same_year:
-                # Same Department & Same Year (Top Tier)
                 tier_score = 1000 if f.role == "Fresher" else (800 if f.role == "Senior" else 600)
             elif is_same_dept and not is_same_year:
-                # Same Department but different year
                 tier_score = 500 if f.role == "Fresher" else (400 if f.role == "Senior" else 300)
             elif not is_same_dept and is_same_year:
-                # Different Department but same year
                 tier_score = 400 if f.role == "Fresher" else (300 if f.role == "Senior" else 200)
             else:
-                # Different Department & Different Year
                 tier_score = 200 if f.role == "Fresher" else (150 if f.role == "Senior" else 100)
                 
             pref = tier_score + min(10, f.experience_years)
             objective_terms.append(pref * x[(e.id, f.id)])
             
     # Workload Balancing Penalties
+    penalties = {1: 0, 2: 10, 3: 30, 4: 80}
     for f in faculty_list:
-        # Step penalties: 
-        # 1st slot: 0 penalty
-        # 2nd slot: 10 penalty
-        # 3rd slot: 30 penalty
-        # 4th slot: 80 penalty
-        penalties = {1: 0, 2: 10, 3: 30, 4: 80}
         for k in range(1, f.max_slots + 1):
             penalty = penalties.get(k, 100)
             objective_terms.append(-penalty * y[(f.id, k)])
@@ -216,9 +244,9 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
     cross_year_assignments = 0
     
     for e in exams:
-        exam_date_day = get_day_of_week(e.date)
         shortage = int(solver.Value(s[e.id]))
         shortages_by_exam[e.course_code] = shortage
+        e_start, e_end = get_exam_times(e)
         
         # Extract Assigned Faculty
         assigned_faculty_ids = []
@@ -232,32 +260,32 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
         # Compute Suitability details for all faculty & classify
         faculty_suitability_list = []
         for f in faculty_list:
-            # Check availability
-            has_class = tt_map.get((f.id, exam_date_day, e.slot_id), False)
+            has_class_clash = (e.id, f.id) in class_clash_map
             is_sim_unavail = is_simulation and f.is_simulated_unavailable
-            is_available = not (has_class or is_sim_unavail)
+            is_available = not (has_class_clash or is_sim_unavail)
             
-            # Compute Suitability Score
             score_card = calculate_suitability(f, e, final_workloads, is_available)
             
-            # Rejection/Avoided Reason
             rejection_reason = None
             status_str = "Avoided"
             
             if f.id in assigned_faculty_ids:
                 status_str = "Assigned"
             else:
-                if has_class:
-                    rejection_reason = f"Class conflict during {exam_date_day} {e.slot.name}"
+                if has_class_clash:
+                    rejection_reason = class_clash_map[(e.id, f.id)]
                 elif is_sim_unavail:
-                    rejection_reason = "Marked unavailable (What-If)"
+                    rejection_reason = "Marked unavailable (What-If simulation)"
                 else:
+                    # Check if assigned to another overlapping exam on this day
                     other_exam_assigned = False
-                    for other_e in slot_exams.get((e.date, e.slot_id), []):
-                        if other_e.id != e.id and solver.Value(x[(other_e.id, f.id)]) == 1:
-                            other_exam_assigned = True
-                            rejection_reason = f"Assigned to {other_e.course_code} in same slot"
-                            break
+                    for other_e in exams:
+                        if other_e.id != e.id and other_e.date == e.date:
+                            s_other, end_other = get_exam_times(other_e)
+                            if times_overlap(e_start, e_end, s_other, end_other) and solver.Value(x[(other_e.id, f.id)]) == 1:
+                                other_exam_assigned = True
+                                rejection_reason = f"Assigned to {other_e.course_code} ({s_other}–{end_other})"
+                                break
                     
                     if not other_exam_assigned:
                         if final_workloads[f.id] >= f.max_slots:
@@ -275,27 +303,23 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
                 "is_available": is_available
             })
             
-        # Sort candidates to determine backups
+        # Eligible backups
         eligible_backups = [
             item for item in faculty_suitability_list 
-            if item["status"] == "Avoided" and item["is_available"] and not item["rejection_reason"].startswith("Assigned to")
+            if item["status"] == "Avoided" and item["is_available"] and not str(item["rejection_reason"]).startswith("Assigned to")
         ]
         eligible_backups.sort(key=lambda item: item["score_card"]["total"], reverse=True)
         
-        backup_faculty_ids = set()
         for item in eligible_backups[:3]:
             item["status"] = "Backup"
             item["rejection_reason"] = None
-            backup_faculty_ids.add(item["faculty"].id)
             
-        # Save all results to assignments list
         for item in faculty_suitability_list:
             f = item["faculty"]
             status_val = item["status"]
             rejection_val = item["rejection_reason"]
             score_card = item["score_card"]
             
-            # Save all Assignments to Database (if not simulation)
             if not is_simulation:
                 assignment = DutyAssignment(
                     exam_id=e.id,
@@ -321,7 +345,6 @@ def solve_allocation(db: Session, is_simulation: bool = False) -> dict:
                 "score_breakdown": score_card
             })
             
-    # If not simulation, overwrite the database assignments
     if not is_simulation:
         db.query(DutyAssignment).delete()
         db.add_all(assignments_to_save)
